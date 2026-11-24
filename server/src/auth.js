@@ -10,8 +10,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export const AUTH_COOKIE = 'fs_admin_token';
 export const JWT_SECRET = process.env.JWT_SECRET || 'form-studio-dev-secret';
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@formstudio.local';
-export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'Admin';
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'MIS2026';
 
 export function signAdminToken(email) {
   return jwt.sign({ email, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
