@@ -20,6 +20,8 @@ import {
   Layers,
   Heart,
   Star,
+  Target,
+  ClipboardList,
 } from 'lucide-react';
 import { api } from '../api';
 import { getTheme } from '../utils/themes';
@@ -95,6 +97,60 @@ function getScaleLabel(num, min, max) {
   if (ratio <= 0.65) return { stars, text: 'Pretty good' };
   if (ratio <= 0.85) return { stars, text: 'Really great' };
   return { stars, text: 'Outstanding' };
+}
+
+/**
+ * Smartly parses long Google Form descriptions (e.g. Agency | Event + Purpose: ... + Instructions: ...)
+ * into structured, scannable blocks instead of a single wall of text.
+ */
+function parseWelcomeDescription(raw) {
+  if (!raw || !raw.trim()) return null;
+  const text = raw.replace(/\r\n/g, '\n').trim();
+
+  const purposeMatch = text.match(/\bPurpose\s*:\s*/i);
+  const instructionsMatch = text.match(/\bInstructions?\s*:\s*/i);
+
+  if (!purposeMatch && !instructionsMatch) {
+    return { plain: text };
+  }
+
+  const pIdx = purposeMatch ? purposeMatch.index : -1;
+  const iIdx = instructionsMatch ? instructionsMatch.index : -1;
+
+  const firstMarker =
+    pIdx !== -1 && iIdx !== -1 ? Math.min(pIdx, iIdx) : Math.max(pIdx, iIdx);
+
+  const intro = text.slice(0, firstMarker).trim();
+
+  let purpose = '';
+  if (pIdx !== -1) {
+    const start = pIdx + purposeMatch[0].length;
+    const end = iIdx > pIdx ? iIdx : text.length;
+    purpose = text.slice(start, end).trim();
+  }
+
+  let instructions = '';
+  if (iIdx !== -1) {
+    const start = iIdx + instructionsMatch[0].length;
+    const end = pIdx > iIdx ? pIdx : text.length;
+    instructions = text.slice(start, end).trim();
+  }
+
+  // Split intro lines/pipes into neat metadata tags if present
+  const introParts = intro
+    .split(/\n+|\s*\|\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  // Split instructions into bullet points by sentence
+  const instructionBullets = instructions
+    ? instructions
+        .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+
+  return { introParts, purpose, instructionBullets };
 }
 
 const slideVariants = {
@@ -826,8 +882,12 @@ export default function QuizPlayer() {
 
       {/* Main Centered Container (extra bottom padding on mobile for sticky action bar) */}
       <main
-        className={`relative z-10 flex-1 flex flex-col items-center justify-center px-3.5 sm:px-8 pt-16 sm:pt-24 ${
-          phase === 'playing' ? 'pb-28 sm:pb-12' : 'pb-10 sm:pb-12'
+        className={`relative z-10 flex-1 flex flex-col items-center px-3.5 sm:px-8 ${
+          phase === 'welcome'
+            ? 'justify-start sm:justify-center pt-6 sm:pt-12 pb-10'
+            : phase === 'playing'
+              ? 'justify-center pt-16 sm:pt-24 pb-28 sm:pb-12'
+              : 'justify-center pt-16 sm:pt-24 pb-10 sm:pb-12'
         }`}
       >
         <div className="w-full max-w-xl">
@@ -840,100 +900,174 @@ export default function QuizPlayer() {
 
           <AnimatePresence mode="wait" custom={direction}>
             {/* WELCOME SCREEN */}
-            {phase === 'welcome' && (
-              <motion.div
-                key="welcome"
-                initial={{ opacity: 0, y: 28, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -24, scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                className="relative"
-              >
-                {/* Stacked deck depth cards */}
-                <div className="absolute inset-x-4 -bottom-3 h-10 rounded-[28px] bg-white/60 border border-white shadow-md -z-10" />
-                <div className="absolute inset-x-8 -bottom-6 h-10 rounded-[28px] bg-white/35 border border-white/80 -z-20" />
+            {phase === 'welcome' && (() => {
+              const parsedDesc = parseWelcomeDescription(form.description);
+              const sectionCount = (form.schema?.sections || []).length;
+              return (
+                <motion.div
+                  key="welcome"
+                  initial={{ opacity: 0, y: 28, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -24, scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                  className="relative"
+                >
+                  {/* Stacked deck depth cards */}
+                  <div className="absolute inset-x-4 -bottom-3 h-10 rounded-[28px] bg-white/60 border border-white shadow-md -z-10" />
+                  <div className="absolute inset-x-8 -bottom-6 h-10 rounded-[28px] bg-white/35 border border-white/80 -z-20" />
 
-                <div className="rounded-[32px] bg-white/95 backdrop-blur-xl shadow-2xl shadow-slate-900/10 border-2 border-white overflow-hidden">
-                  {/* Hero Gradient Banner */}
-                  <div
-                    className={`relative px-7 pt-8 pb-7 sm:px-10 sm:pt-9 bg-gradient-to-br ${theme.heroGradient} text-white overflow-hidden`}
-                  >
-                    <motion.div
-                      animate={{ rotate: [0, 12, -12, 0], scale: [1, 1.1, 1] }}
-                      transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                      className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/15 blur-xl"
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-3 mb-4"
+                  <div className="rounded-[28px] sm:rounded-[32px] bg-white/95 backdrop-blur-xl shadow-2xl shadow-slate-900/10 border-2 border-white overflow-hidden">
+                    {/* Executive Hero Gradient Banner */}
+                    <div
+                      className={`relative px-6 pt-7 pb-6 sm:px-9 sm:pt-8 sm:pb-7 bg-gradient-to-br ${theme.heroGradient} text-white overflow-hidden`}
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-white p-1.5 shadow-md shrink-0 flex items-center justify-center">
-                        <img
-                          src="/logo.png"
-                          alt="Department of Agriculture Logo"
-                          className="w-full h-full object-contain"
-                        />
+                      <motion.div
+                        animate={{ rotate: [0, 12, -12, 0], scale: [1, 1.1, 1] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                        className="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-white/15 blur-2xl"
+                      />
+                      <div className="relative z-10 flex items-center gap-3.5 mb-4">
+                        <div className="w-14 h-14 rounded-2xl bg-white p-1.5 shadow-lg shrink-0 flex items-center justify-center ring-2 ring-white/30">
+                          <img
+                            src="/logo.png"
+                            alt="Department of Agriculture Logo"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/25 mb-1">
+                            <Sparkles className="w-3 h-3" />
+                            Interactive Form
+                          </span>
+                          {parsedDesc?.introParts?.[0] && (
+                            <p className="text-[11px] font-bold text-white/90 leading-tight line-clamp-2">
+                              {parsedDesc.introParts.slice(0, 2).join(' · ')}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-white/20 backdrop-blur-md border border-white/30">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Interactive Form
-                      </span>
-                    </motion.div>
 
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-                      {form.title}
-                    </h1>
-                  </div>
+                      <h1 className="relative z-10 text-xl sm:text-2xl font-extrabold tracking-tight leading-snug">
+                        {form.title}
+                      </h1>
 
-                  <div className="p-7 sm:p-9 space-y-6">
-                    {form.description && (
-                      <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                        {form.description}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold text-slate-600">
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-slate-100 border border-slate-200/70">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        ~{estimatedMins} min
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-slate-100 border border-slate-200/70">
-                        <Layers className="w-3.5 h-3.5 text-slate-500" />
-                        {totalQuestions} {totalQuestions === 1 ? 'question' : 'questions'}
-                      </span>
-                      {hasSavedDraft && (
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl ${theme.badge}`}
-                        >
-                          <Heart className="w-3.5 h-3.5" />
-                          Draft saved
-                        </span>
+                      {parsedDesc?.introParts && parsedDesc.introParts.length > 2 && (
+                        <div className="relative z-10 mt-3 flex flex-wrap gap-1.5">
+                          {parsedDesc.introParts.slice(2).map((part, i) => (
+                            <span
+                              key={i}
+                              className="inline-block px-2.5 py-1 rounded-lg bg-black/15 backdrop-blur-xs text-[11px] font-semibold text-white/95 leading-tight"
+                            >
+                              {part}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
 
-                    {/* 3D Tactile Button */}
-                    <motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98, y: 2 }}
-                      onClick={() => {
-                        setDirection(1);
-                        setPhase('playing');
-                      }}
-                      className={`w-full inline-flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl text-white font-extrabold text-base shadow-xl border-b-4 border-black/20 active:border-b-0 transition ${theme.accentBg}`}
-                    >
-                      <span>{hasSavedDraft ? 'Continue Form' : 'Let’s Begin'}</span>
-                      <motion.span
-                        animate={{ x: [0, 5, 0] }}
-                        transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                    <div className="p-5 sm:p-8 space-y-4">
+                      {/* Structured Description Cards */}
+                      {parsedDesc?.plain && (
+                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                          {parsedDesc.plain}
+                        </p>
+                      )}
+
+                      {parsedDesc?.purpose && (
+                        <div className="rounded-2xl bg-emerald-50/70 border border-emerald-200/70 p-4 space-y-1.5">
+                          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-800">
+                            <Target className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Purpose</span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            {parsedDesc.purpose}
+                          </p>
+                        </div>
+                      )}
+
+                      {parsedDesc?.instructionBullets?.length > 0 && (
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-4 space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                            <ClipboardList className="w-4 h-4 text-slate-500 shrink-0" />
+                            <span>Quick Instructions</span>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {parsedDesc.instructionBullets.map((item, idx) => (
+                              <li
+                                key={idx}
+                                className="flex items-start gap-2 text-xs sm:text-sm text-slate-600 leading-snug"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Compact Metric Strip */}
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5 text-center">
+                          <Clock className="w-4 h-4 text-slate-400 mx-auto mb-0.5" />
+                          <p className="text-xs font-extrabold text-slate-800">
+                            ~{estimatedMins} min
+                          </p>
+                          <p className="text-[10px] font-semibold text-slate-400">Est. Time</p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5 text-center">
+                          <Layers className="w-4 h-4 text-slate-400 mx-auto mb-0.5" />
+                          <p className="text-xs font-extrabold text-slate-800">
+                            {totalQuestions}
+                          </p>
+                          <p className="text-[10px] font-semibold text-slate-400">
+                            {totalQuestions === 1 ? 'Question' : 'Questions'}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5 text-center">
+                          <Flag className="w-4 h-4 text-slate-400 mx-auto mb-0.5" />
+                          <p className="text-xs font-extrabold text-slate-800">
+                            {sectionCount}
+                          </p>
+                          <p className="text-[10px] font-semibold text-slate-400">
+                            {sectionCount === 1 ? 'Section' : 'Sections'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {hasSavedDraft && (
+                        <div className="flex justify-center">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold ${theme.badge}`}
+                          >
+                            <Heart className="w-3.5 h-3.5" />
+                            Your previous progress was restored
+                          </span>
+                        </div>
+                      )}
+
+                      {/* 3D Tactile Button */}
+                      <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98, y: 2 }}
+                        onClick={() => {
+                          setDirection(1);
+                          setPhase('playing');
+                        }}
+                        className={`w-full inline-flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl text-white font-extrabold text-base shadow-xl border-b-4 border-black/20 active:border-b-0 transition ${theme.accentBg}`}
                       >
-                        <ArrowRight className="w-5 h-5" />
-                      </motion.span>
-                    </motion.button>
+                        <span>{hasSavedDraft ? 'Continue Form' : 'Let’s Begin'}</span>
+                        <motion.span
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                          <ArrowRight className="w-5 h-5" />
+                        </motion.span>
+                      </motion.button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              );
+            })()}
 
             {/* PLAYING: SECTION MILESTONE OR QUESTION */}
             {phase === 'playing' && currentStep && (
