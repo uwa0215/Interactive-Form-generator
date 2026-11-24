@@ -180,33 +180,43 @@ export default function AdminDashboard() {
       {/* Frosted Light Executive Header */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_2px_10px_rgba(15,23,42,0.03)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-1.5 flex items-center justify-center border border-emerald-200/80 shadow-md shadow-emerald-600/10">
-              <img
-                src="/logo.png"
-                alt="Department of Agriculture Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="font-display text-2xl sm:text-3xl font-bold leading-none tracking-tight flex items-baseline">
-                  <span className="italic bg-gradient-to-tr from-amber-500 via-amber-400 to-emerald-500 bg-clip-text text-transparent pr-0.5 drop-shadow-2xs">
-                    i
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-1.5 flex items-center justify-center border-2 border-emerald-200/80 shadow-md shadow-emerald-600/10">
+                <img
+                  src="/logo.png"
+                  alt="Department of Agriculture Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <h1 className="relative font-cute text-3xl sm:text-4xl font-bold leading-none tracking-tight flex items-center select-none">
+                  {/* Cute rounded "i" with floating golden leaf-dot */}
+                  <span className="relative inline-flex items-baseline mr-0.5">
+                    <span className="bg-gradient-to-b from-amber-400 to-orange-500 bg-clip-text text-transparent">
+                      i
+                    </span>
                   </span>
-                  <span className="bg-gradient-to-r from-slate-900 via-emerald-900 to-teal-700 bg-clip-text text-transparent tracking-wide">
+                  <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700 bg-clip-text text-transparent">
                     FORM
                   </span>
+                  {/* Cute tiny twinkling vector sparkle */}
+                  <motion.svg
+                    viewBox="0 0 24 24"
+                    className="w-4 h-4 -mt-4 ml-0.5 text-amber-400 shrink-0"
+                    animate={{ scale: [0.9, 1.2, 0.9], rotate: [0, 18, 0] }}
+                    transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <path
+                      d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"
+                      fill="currentColor"
+                    />
+                  </motion.svg>
                 </h1>
-                <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 text-[10px] font-mono font-bold text-emerald-700 shadow-2xs">
+                <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-50 to-amber-50 border border-emerald-200/90 text-[10px] font-cute font-bold text-emerald-700 shadow-2xs">
                   v2.0
                 </span>
               </div>
-              <p className="text-[11px] font-semibold text-slate-500 mt-1 tracking-wide">
-                DA-RFO IV-CALABARZON · ICT Management Console
-              </p>
             </div>
-          </div>
 
           <div className="flex items-center gap-2.5">
             <span className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50/90 border border-emerald-200/70 text-[11px] font-semibold text-emerald-800">
@@ -253,14 +263,14 @@ export default function AdminDashboard() {
               <Cpu className="w-3.5 h-3.5 text-emerald-600" />
               LIVE TELEMETRY · GOOGLE FORMS SYNC ENGINE
             </div>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              <span className="italic bg-gradient-to-tr from-amber-500 to-emerald-500 bg-clip-text text-transparent pr-0.5">
+            <h2 className="font-cute text-2xl sm:text-4xl font-bold tracking-tight text-slate-900">
+              <span className="bg-gradient-to-b from-amber-400 to-orange-500 bg-clip-text text-transparent">
                 i
               </span>
-              <span className="text-slate-900 tracking-wide">FORM</span>{' '}
-              <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 bg-clip-text text-transparent">
-                Control Center
-              </span>
+              <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                FORM
+              </span>{' '}
+              <span className="text-slate-800">Control Center</span>
             </h2>
             <p className="text-sm text-slate-500 max-w-xl leading-relaxed">
               Deploy mobile-first evaluation forms, distribute scannable QR codes, and

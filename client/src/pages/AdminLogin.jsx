@@ -41,11 +41,11 @@ export default function AdminLogin() {
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="font-display text-4xl font-bold tracking-tight text-white flex items-baseline justify-center">
-            <span className="italic bg-gradient-to-tr from-amber-400 via-yellow-300 to-emerald-300 bg-clip-text text-transparent pr-0.5">
+          <h1 className="font-cute text-4xl font-bold tracking-tight text-white flex items-center justify-center">
+            <span className="bg-gradient-to-b from-amber-300 to-orange-400 bg-clip-text text-transparent mr-0.5">
               i
             </span>
-            <span className="bg-gradient-to-r from-white via-emerald-100 to-teal-200 bg-clip-text text-transparent tracking-wide">
+            <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-white bg-clip-text text-transparent">
               FORM
             </span>
           </h1>
