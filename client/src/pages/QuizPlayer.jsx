@@ -928,14 +928,7 @@ export default function QuizPlayer() {
                       )}
 
                       {/* Compact Metric Strip */}
-                      <div className="grid grid-cols-3 gap-2 pt-1">
-                        <div className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5 text-center">
-                          <Clock className="w-4 h-4 text-slate-400 mx-auto mb-0.5" />
-                          <p className="text-xs font-extrabold text-slate-800">
-                            ~{estimatedMins} min
-                          </p>
-                          <p className="text-[10px] font-semibold text-slate-400">Est. Time</p>
-                        </div>
+                      <div className="grid grid-cols-2 gap-2.5 pt-1">
                         <div className="rounded-2xl bg-slate-50 border border-slate-200/70 px-3 py-2.5 text-center">
                           <Layers className="w-4 h-4 text-slate-400 mx-auto mb-0.5" />
                           <p className="text-xs font-extrabold text-slate-800">
