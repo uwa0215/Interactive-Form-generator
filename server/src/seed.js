@@ -1,8 +1,8 @@
 import db from './db.js';
 
-export function seedDatabaseIfEmpty() {
-  const count = db.prepare('SELECT COUNT(*) AS count FROM forms').get().count;
-  if (count > 0) return;
+export async function seedDatabaseIfEmpty() {
+  const row = await db.get('SELECT COUNT(*) AS count FROM forms');
+  if (Number(row?.count || 0) > 0) return;
 
   const demoSchema = {
     sections: [
@@ -118,21 +118,22 @@ export function seedDatabaseIfEmpty() {
     ],
   };
 
-  const insertForm = db.prepare(`
+  const formInfo = await db.run(
+    `
     INSERT INTO forms (slug, title, description, google_form_url, submit_url, total_pages, schema_json, theme, is_active)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const formInfo = insertForm.run(
-    'iguide-eval',
-    'iGuide Service Evaluation',
-    'Help us evaluate the new iGuide digital portal experience. Takes less than 2 minutes!',
-    'demo://iguide-eval',
-    'demo://iguide-eval',
-    3,
-    JSON.stringify(demoSchema),
-    'emerald',
-    1
+  `,
+    [
+      'iguide-eval',
+      'iGuide Service Evaluation',
+      'Help us evaluate the new iGuide digital portal experience. Takes less than 2 minutes!',
+      'demo://iguide-eval',
+      'demo://iguide-eval',
+      3,
+      JSON.stringify(demoSchema),
+      'emerald',
+      1,
+    ]
   );
 
   const formId = formInfo.lastInsertRowid;
@@ -214,20 +215,14 @@ export function seedDatabaseIfEmpty() {
     },
   ];
 
-  const insertResp = db.prepare(`
-    INSERT INTO responses (form_id, participant_name, participant_office, answers_json, google_sync_status, submitted_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-
   for (const r of sampleResponses) {
     const ts = new Date(now - r.offsetMins * 60 * 1000).toISOString();
-    insertResp.run(
-      formId,
-      r.name,
-      r.office,
-      JSON.stringify(r.answers),
-      r.status,
-      ts
+    await db.run(
+      `
+      INSERT INTO responses (form_id, participant_name, participant_office, answers_json, google_sync_status, submitted_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+      [formId, r.name, r.office, JSON.stringify(r.answers), r.status, ts]
     );
   }
 }

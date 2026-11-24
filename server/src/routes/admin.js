@@ -68,30 +68,33 @@ router.post('/forms/import', async (req, res) => {
       slug = `form-${Date.now().toString(36)}`;
     }
 
-    const existing = db.prepare('SELECT id FROM forms WHERE slug = ?').get(slug);
+    const existing = await db.get('SELECT id FROM forms WHERE slug = ?', [slug]);
     if (existing) {
       return res.status(409).json({
         error: `Slug "${slug}" is already in use. Please choose a different short URL slug.`,
       });
     }
 
-    const stmt = db.prepare(`
+    const result = await db.run(
+      `
       INSERT INTO forms (slug, title, description, google_form_url, submit_url, total_pages, schema_json, theme, is_active)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `);
-
-    const result = stmt.run(
-      slug,
-      parsed.title,
-      parsed.description || '',
-      parsed.google_form_url,
-      parsed.submit_url,
-      parsed.total_pages,
-      JSON.stringify(parsed.schema),
-      theme
+    `,
+      [
+        slug,
+        parsed.title,
+        parsed.description || '',
+        parsed.google_form_url,
+        parsed.submit_url,
+        parsed.total_pages,
+        JSON.stringify(parsed.schema),
+        theme,
+      ]
     );
 
-    const created = db.prepare('SELECT * FROM forms WHERE id = ?').get(result.lastInsertRowid);
+    const created = await db.get('SELECT * FROM forms WHERE id = ?', [
+      result.lastInsertRowid,
+    ]);
     return res.status(201).json({
       form: {
         ...created,
@@ -106,10 +109,9 @@ router.post('/forms/import', async (req, res) => {
 });
 
 // GET /api/admin/forms
-router.get('/forms', (_req, res) => {
-  const rows = db
-    .prepare(
-      `
+router.get('/forms', async (_req, res, next) => {
+  try {
+    const rows = await db.all(`
       SELECT
         f.*,
         COUNT(r.id) AS response_count,
@@ -118,51 +120,49 @@ router.get('/forms', (_req, res) => {
       LEFT JOIN responses r ON r.form_id = f.id
       GROUP BY f.id
       ORDER BY f.created_at DESC, f.id DESC
-    `
-    )
-    .all();
+    `);
 
-  const allResponses = db
-    .prepare('SELECT submitted_at FROM responses')
-    .all();
+    const allResponses = await db.all('SELECT submitted_at FROM responses');
+    const responsesToday = allResponses.filter((r) => isSameUtcDay(r.submitted_at)).length;
 
-  const responsesToday = allResponses.filter((r) => isSameUtcDay(r.submitted_at)).length;
+    const forms = rows.map((row) => {
+      const schema = JSON.parse(row.schema_json);
+      const questionCount = getAllQuestions(schema).length;
+      return {
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        description: row.description,
+        google_form_url: row.google_form_url,
+        submit_url: row.submit_url,
+        total_pages: row.total_pages,
+        theme: row.theme,
+        is_active: Boolean(row.is_active),
+        created_at: row.created_at,
+        response_count: Number(row.response_count || 0),
+        last_response_at: row.last_response_at,
+        question_count: questionCount,
+      };
+    });
 
-  const forms = rows.map((row) => {
-    const schema = JSON.parse(row.schema_json);
-    const questionCount = getAllQuestions(schema).length;
-    return {
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      description: row.description,
-      google_form_url: row.google_form_url,
-      submit_url: row.submit_url,
-      total_pages: row.total_pages,
-      theme: row.theme,
-      is_active: Boolean(row.is_active),
-      created_at: row.created_at,
-      response_count: Number(row.response_count || 0),
-      last_response_at: row.last_response_at,
-      question_count: questionCount,
-    };
-  });
-
-  return res.json({
-    forms,
-    summary: {
-      total_forms: forms.length,
-      active_forms: forms.filter((f) => f.is_active).length,
-      total_responses: allResponses.length,
-      responses_today: responsesToday,
-    },
-  });
+    return res.json({
+      forms,
+      summary: {
+        total_forms: forms.length,
+        active_forms: forms.filter((f) => f.is_active).length,
+        total_responses: allResponses.length,
+        responses_today: responsesToday,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // PATCH /api/admin/forms/:id
 router.patch('/forms/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const form = db.prepare('SELECT * FROM forms WHERE id = ?').get(id);
+  const form = await db.get('SELECT * FROM forms WHERE id = ?', [id]);
   if (!form) {
     return res.status(404).json({ error: 'Form not found.' });
   }
@@ -195,24 +195,25 @@ router.patch('/forms/:id', async (req, res) => {
       nextTotalPages = parsed.total_pages;
     }
 
-    db.prepare(
+    await db.run(
       `
       UPDATE forms
       SET is_active = ?, theme = ?, title = ?, description = ?, schema_json = ?, submit_url = ?, total_pages = ?
       WHERE id = ?
-    `
-    ).run(
-      nextIsActive,
-      nextTheme,
-      nextTitle,
-      nextDesc,
-      nextSchemaJson,
-      nextSubmitUrl,
-      nextTotalPages,
-      id
+    `,
+      [
+        nextIsActive,
+        nextTheme,
+        nextTitle,
+        nextDesc,
+        nextSchemaJson,
+        nextSubmitUrl,
+        nextTotalPages,
+        id,
+      ]
     );
 
-    const updated = db.prepare('SELECT * FROM forms WHERE id = ?').get(id);
+    const updated = await db.get('SELECT * FROM forms WHERE id = ?', [id]);
     return res.json({
       form: {
         ...updated,
@@ -226,301 +227,325 @@ router.patch('/forms/:id', async (req, res) => {
 });
 
 // DELETE /api/admin/forms/:id
-router.delete('/forms/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const info = db.prepare('DELETE FROM forms WHERE id = ?').run(id);
-  if (info.changes === 0) {
-    return res.status(404).json({ error: 'Form not found.' });
+router.delete('/forms/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const info = await db.run('DELETE FROM forms WHERE id = ?', [id]);
+    if (info.changes === 0) {
+      return res.status(404).json({ error: 'Form not found.' });
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
   }
-  return res.json({ ok: true });
 });
 
 // GET /api/admin/forms/:id/responses
-router.get('/forms/:id/responses', (req, res) => {
-  const id = Number(req.params.id);
-  const form = db.prepare('SELECT * FROM forms WHERE id = ?').get(id);
-  if (!form) {
-    return res.status(404).json({ error: 'Form not found.' });
-  }
+router.get('/forms/:id/responses', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const form = await db.get('SELECT * FROM forms WHERE id = ?', [id]);
+    if (!form) {
+      return res.status(404).json({ error: 'Form not found.' });
+    }
 
-  const schema = JSON.parse(form.schema_json);
-  const questions = getAllQuestions(schema);
+    const schema = JSON.parse(form.schema_json);
+    const questions = getAllQuestions(schema);
 
-  const rawResponses = db
-    .prepare('SELECT * FROM responses WHERE form_id = ? ORDER BY submitted_at DESC, id DESC')
-    .all(id);
+    const rawResponses = await db.all(
+      'SELECT * FROM responses WHERE form_id = ? ORDER BY submitted_at DESC, id DESC',
+      [id]
+    );
 
-  const responses = rawResponses.map((r) => ({
-    id: r.id,
-    form_id: r.form_id,
-    participant_name: r.participant_name || 'Anonymous',
-    participant_office: r.participant_office || '—',
-    answers: JSON.parse(r.answers_json || '{}'),
-    google_sync_status: r.google_sync_status,
-    submitted_at: r.submitted_at,
-  }));
+    const responses = rawResponses.map((r) => ({
+      id: r.id,
+      form_id: r.form_id,
+      participant_name: r.participant_name || 'Anonymous',
+      participant_office: r.participant_office || '—',
+      answers: JSON.parse(r.answers_json || '{}'),
+      google_sync_status: r.google_sync_status,
+      submitted_at: r.submitted_at,
+    }));
 
-  const totalResponses = responses.length;
-  const responsesToday = responses.filter((r) => isSameUtcDay(r.submitted_at)).length;
-  const syncedCount = responses.filter((r) => r.google_sync_status === 'synced').length;
-  const failedCount = totalResponses - syncedCount;
-  const syncRate = totalResponses > 0 ? Math.round((syncedCount / totalResponses) * 100) : 100;
+    const totalResponses = responses.length;
+    const responsesToday = responses.filter((r) => isSameUtcDay(r.submitted_at)).length;
+    const syncedCount = responses.filter((r) => r.google_sync_status === 'synced').length;
+    const failedCount = totalResponses - syncedCount;
+    const syncRate = totalResponses > 0 ? Math.round((syncedCount / totalResponses) * 100) : 100;
 
-  // Build per-question statistics
-  const questionStats = questions.map((q) => {
-    const stat = {
-      id: q.id,
-      entryId: q.entryId,
-      title: q.title,
-      type: q.type,
-      sectionTitle: q.sectionTitle,
-      totalAnswered: 0,
-      breakdown: [],
-      average: null,
-      comments: [],
-    };
+    // Build per-question statistics
+    const questionStats = questions.map((q) => {
+      const stat = {
+        id: q.id,
+        entryId: q.entryId,
+        title: q.title,
+        type: q.type,
+        sectionTitle: q.sectionTitle,
+        totalAnswered: 0,
+        breakdown: [],
+        average: null,
+        comments: [],
+      };
 
-    if (['multiple_choice', 'dropdown', 'checkboxes'].includes(q.type)) {
-      const counts = new Map();
-      for (const opt of q.options || []) {
-        counts.set(opt, 0);
-      }
+      if (['multiple_choice', 'dropdown', 'checkboxes'].includes(q.type)) {
+        const counts = new Map();
+        for (const opt of q.options || []) {
+          counts.set(opt, 0);
+        }
 
-      for (const r of responses) {
-        const val = r.answers[q.entryId];
-        if (val === undefined || val === null || val === '') continue;
-        if (Array.isArray(val)) {
-          if (val.length > 0) stat.totalAnswered++;
-          for (const item of val) {
-            counts.set(item, (counts.get(item) || 0) + 1);
+        for (const r of responses) {
+          const val = r.answers[q.entryId];
+          if (val === undefined || val === null || val === '') continue;
+          if (Array.isArray(val)) {
+            if (val.length > 0) stat.totalAnswered++;
+            for (const item of val) {
+              counts.set(item, (counts.get(item) || 0) + 1);
+            }
+          } else {
+            stat.totalAnswered++;
+            counts.set(String(val), (counts.get(String(val)) || 0) + 1);
           }
-        } else {
-          stat.totalAnswered++;
-          counts.set(String(val), (counts.get(String(val)) || 0) + 1);
+        }
+
+        const denom = stat.totalAnswered || 1;
+        stat.breakdown = Array.from(counts.entries()).map(([label, count]) => ({
+          label,
+          count,
+          percentage: stat.totalAnswered > 0 ? Math.round((count / denom) * 100) : 0,
+        }));
+      } else if (q.type === 'linear_scale') {
+        const min = Number(q.min ?? 1);
+        const max = Number(q.max ?? 5);
+        const counts = new Map();
+        for (let i = min; i <= max; i++) {
+          counts.set(String(i), 0);
+        }
+
+        let sum = 0;
+        for (const r of responses) {
+          const val = r.answers[q.entryId];
+          if (val === undefined || val === null || val === '') continue;
+          const num = Number(val);
+          if (!Number.isNaN(num)) {
+            stat.totalAnswered++;
+            sum += num;
+            counts.set(String(num), (counts.get(String(num)) || 0) + 1);
+          }
+        }
+
+        stat.average =
+          stat.totalAnswered > 0 ? Number((sum / stat.totalAnswered).toFixed(2)) : null;
+        stat.min = min;
+        stat.max = max;
+        stat.minLabel = q.minLabel || '';
+        stat.maxLabel = q.maxLabel || '';
+        const denom = stat.totalAnswered || 1;
+        stat.breakdown = Array.from(counts.entries()).map(([label, count]) => ({
+          label,
+          count,
+          percentage: stat.totalAnswered > 0 ? Math.round((count / denom) * 100) : 0,
+        }));
+      } else {
+        for (const r of responses) {
+          const val = r.answers[q.entryId];
+          if (val !== undefined && val !== null && String(val).trim() !== '') {
+            stat.totalAnswered++;
+            stat.comments.push({
+              responseId: r.id,
+              participantName: r.participant_name,
+              participantOffice: r.participant_office,
+              text: String(val).trim(),
+              submittedAt: r.submitted_at,
+            });
+          }
         }
       }
 
-      const denom = stat.totalAnswered || 1;
-      stat.breakdown = Array.from(counts.entries()).map(([label, count]) => ({
-        label,
-        count,
-        percentage: stat.totalAnswered > 0 ? Math.round((count / denom) * 100) : 0,
-      }));
-    } else if (q.type === 'linear_scale') {
-      const min = Number(q.min ?? 1);
-      const max = Number(q.max ?? 5);
-      const counts = new Map();
-      for (let i = min; i <= max; i++) {
-        counts.set(String(i), 0);
-      }
+      const commentEntryId = q.commentField?.entryId || `${q.entryId}__no_comment`;
+      const hasSyntheticComments =
+        !q.commentField &&
+        responses.some(
+          (r) =>
+            r.answers[commentEntryId] !== undefined &&
+            r.answers[commentEntryId] !== null &&
+            String(r.answers[commentEntryId]).trim() !== ''
+        );
 
-      let sum = 0;
-      for (const r of responses) {
-        const val = r.answers[q.entryId];
-        if (val === undefined || val === null || val === '') continue;
-        const num = Number(val);
-        if (!Number.isNaN(num)) {
-          stat.totalAnswered++;
-          sum += num;
-          counts.set(String(num), (counts.get(String(num)) || 0) + 1);
+      if (q.commentField || hasSyntheticComments) {
+        stat.commentFieldLabel = q.commentField?.label || 'Comment for "No" response';
+        for (const r of responses) {
+          const cVal = r.answers[commentEntryId];
+          if (cVal !== undefined && cVal !== null && String(cVal).trim() !== '') {
+            stat.comments.push({
+              responseId: r.id,
+              participantName: r.participant_name,
+              participantOffice: r.participant_office,
+              ratingOrChoice: r.answers[q.entryId],
+              text: String(cVal).trim(),
+              submittedAt: r.submitted_at,
+            });
+          }
         }
       }
 
-      stat.average =
-        stat.totalAnswered > 0 ? Number((sum / stat.totalAnswered).toFixed(2)) : null;
-      stat.min = min;
-      stat.max = max;
-      stat.minLabel = q.minLabel || '';
-      stat.maxLabel = q.maxLabel || '';
-      const denom = stat.totalAnswered || 1;
-      stat.breakdown = Array.from(counts.entries()).map(([label, count]) => ({
-        label,
-        count,
-        percentage: stat.totalAnswered > 0 ? Math.round((count / denom) * 100) : 0,
-      }));
-    } else {
-      // Open-ended text / date / time
-      for (const r of responses) {
-        const val = r.answers[q.entryId];
-        if (val !== undefined && val !== null && String(val).trim() !== '') {
-          stat.totalAnswered++;
-          stat.comments.push({
-            responseId: r.id,
-            participantName: r.participant_name,
-            participantOffice: r.participant_office,
-            text: String(val).trim(),
-            submittedAt: r.submitted_at,
-          });
-        }
-      }
-    }
+      return stat;
+    });
 
-    // Collect attached comment field answers (or synthetic __no_comment answers) if present
-    const commentEntryId = q.commentField?.entryId || `${q.entryId}__no_comment`;
-    const hasSyntheticComments =
-      !q.commentField &&
-      responses.some(
-        (r) =>
-          r.answers[commentEntryId] !== undefined &&
-          r.answers[commentEntryId] !== null &&
-          String(r.answers[commentEntryId]).trim() !== ''
-      );
-
-    if (q.commentField || hasSyntheticComments) {
-      stat.commentFieldLabel = q.commentField?.label || 'Comment for "No" response';
-      for (const r of responses) {
-        const cVal = r.answers[commentEntryId];
-        if (cVal !== undefined && cVal !== null && String(cVal).trim() !== '') {
-          stat.comments.push({
-            responseId: r.id,
-            participantName: r.participant_name,
-            participantOffice: r.participant_office,
-            ratingOrChoice: r.answers[q.entryId],
-            text: String(cVal).trim(),
-            submittedAt: r.submitted_at,
-          });
-        }
-      }
-    }
-
-    return stat;
-  });
-
-  return res.json({
-    form: {
-      id: form.id,
-      slug: form.slug,
-      title: form.title,
-      description: form.description,
-      google_form_url: form.google_form_url,
-      theme: form.theme,
-      is_active: Boolean(form.is_active),
-      total_pages: form.total_pages,
-      schema,
-      created_at: form.created_at,
-    },
-    summary: {
-      totalResponses,
-      responsesToday,
-      syncedCount,
-      failedCount,
-      syncRate,
-    },
-    questionStats,
-    responses,
-  });
+    return res.json({
+      form: {
+        id: form.id,
+        slug: form.slug,
+        title: form.title,
+        description: form.description,
+        google_form_url: form.google_form_url,
+        theme: form.theme,
+        is_active: Boolean(form.is_active),
+        total_pages: form.total_pages,
+        schema,
+        created_at: form.created_at,
+      },
+      summary: {
+        totalResponses,
+        responsesToday,
+        syncedCount,
+        failedCount,
+        syncRate,
+      },
+      questionStats,
+      responses,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // DELETE /api/admin/responses/:id
-router.delete('/responses/:id', (req, res) => {
-  const responseId = Number(req.params.id);
-  const info = db.prepare('DELETE FROM responses WHERE id = ?').run(responseId);
-  if (info.changes === 0) {
-    return res.status(404).json({ error: 'Response not found.' });
+router.delete('/responses/:id', async (req, res, next) => {
+  try {
+    const responseId = Number(req.params.id);
+    const info = await db.run('DELETE FROM responses WHERE id = ?', [responseId]);
+    if (info.changes === 0) {
+      return res.status(404).json({ error: 'Response not found.' });
+    }
+    return res.json({ ok: true, id: responseId });
+  } catch (err) {
+    next(err);
   }
-  return res.json({ ok: true, id: responseId });
 });
 
 // DELETE /api/admin/forms/:id/responses (clear all responses for a form)
-router.delete('/forms/:id/responses', (req, res) => {
-  const formId = Number(req.params.id);
-  const form = db.prepare('SELECT id FROM forms WHERE id = ?').get(formId);
-  if (!form) {
-    return res.status(404).json({ error: 'Form not found.' });
+router.delete('/forms/:id/responses', async (req, res, next) => {
+  try {
+    const formId = Number(req.params.id);
+    const form = await db.get('SELECT id FROM forms WHERE id = ?', [formId]);
+    if (!form) {
+      return res.status(404).json({ error: 'Form not found.' });
+    }
+    const info = await db.run('DELETE FROM responses WHERE form_id = ?', [formId]);
+    return res.json({ ok: true, deleted: info.changes });
+  } catch (err) {
+    next(err);
   }
-  const info = db.prepare('DELETE FROM responses WHERE form_id = ?').run(formId);
-  return res.json({ ok: true, deleted: info.changes });
 });
 
 // POST /api/admin/responses/:id/retry-sync
-router.post('/responses/:id/retry-sync', async (req, res) => {
-  const responseId = Number(req.params.id);
-  const resp = db.prepare('SELECT * FROM responses WHERE id = ?').get(responseId);
-  if (!resp) {
-    return res.status(404).json({ error: 'Response not found.' });
+router.post('/responses/:id/retry-sync', async (req, res, next) => {
+  try {
+    const responseId = Number(req.params.id);
+    const resp = await db.get('SELECT * FROM responses WHERE id = ?', [responseId]);
+    if (!resp) {
+      return res.status(404).json({ error: 'Response not found.' });
+    }
+
+    const form = await db.get('SELECT * FROM forms WHERE id = ?', [resp.form_id]);
+    if (!form) {
+      return res.status(404).json({ error: 'Parent form not found.' });
+    }
+
+    const answers = JSON.parse(resp.answers_json || '{}');
+    const nextStatus = await submitToGoogleForms(form, answers);
+
+    await db.run('UPDATE responses SET google_sync_status = ? WHERE id = ?', [
+      nextStatus,
+      responseId,
+    ]);
+
+    return res.json({
+      id: responseId,
+      google_sync_status: nextStatus,
+    });
+  } catch (err) {
+    next(err);
   }
-
-  const form = db.prepare('SELECT * FROM forms WHERE id = ?').get(resp.form_id);
-  if (!form) {
-    return res.status(404).json({ error: 'Parent form not found.' });
-  }
-
-  const answers = JSON.parse(resp.answers_json || '{}');
-  const nextStatus = await submitToGoogleForms(form, answers);
-
-  db.prepare('UPDATE responses SET google_sync_status = ? WHERE id = ?').run(
-    nextStatus,
-    responseId
-  );
-
-  return res.json({
-    id: responseId,
-    google_sync_status: nextStatus,
-  });
 });
 
 // GET /api/admin/forms/:id/export
-router.get('/forms/:id/export', (req, res) => {
-  const id = Number(req.params.id);
-  const form = db.prepare('SELECT * FROM forms WHERE id = ?').get(id);
-  if (!form) {
-    return res.status(404).json({ error: 'Form not found.' });
-  }
-
-  const schema = JSON.parse(form.schema_json);
-  const questions = getAllQuestions(schema);
-  const rawResponses = db
-    .prepare('SELECT * FROM responses WHERE form_id = ? ORDER BY submitted_at DESC, id DESC')
-    .all(id);
-
-  const columns = [
-    { key: '__submitted_at', label: 'Submitted At (UTC)' },
-    { key: '__participant_name', label: 'Participant Name' },
-    { key: '__participant_office', label: 'Office / Department' },
-    { key: '__google_sync_status', label: 'Google Sync Status' },
-  ];
-
-  for (const q of questions) {
-    columns.push({ key: q.entryId, label: q.title });
-    const hasNoOpt =
-      Array.isArray(q.options) &&
-      q.options.some((opt) => /^\s*no(?:\b|[\s,.;:!()-]|$)/i.test(String(opt).trim()));
-    if (q.commentField) {
-      columns.push({
-        key: q.commentField.entryId,
-        label: `${q.title} — Comment`,
-      });
-    } else if (hasNoOpt) {
-      columns.push({
-        key: `${q.entryId}__no_comment`,
-        label: `${q.title} — Comment`,
-      });
+router.get('/forms/:id/export', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const form = await db.get('SELECT * FROM forms WHERE id = ?', [id]);
+    if (!form) {
+      return res.status(404).json({ error: 'Form not found.' });
     }
+
+    const schema = JSON.parse(form.schema_json);
+    const questions = getAllQuestions(schema);
+    const rawResponses = await db.all(
+      'SELECT * FROM responses WHERE form_id = ? ORDER BY submitted_at DESC, id DESC',
+      [id]
+    );
+
+    const columns = [
+      { key: '__submitted_at', label: 'Submitted At (UTC)' },
+      { key: '__participant_name', label: 'Participant Name' },
+      { key: '__participant_office', label: 'Office / Department' },
+      { key: '__google_sync_status', label: 'Google Sync Status' },
+    ];
+
+    for (const q of questions) {
+      columns.push({ key: q.entryId, label: q.title });
+      const hasNoOpt =
+        Array.isArray(q.options) &&
+        q.options.some((opt) => /^\s*no(?:\b|[\s,.;:!()-]|$)/i.test(String(opt).trim()));
+      if (q.commentField) {
+        columns.push({
+          key: q.commentField.entryId,
+          label: `${q.title} — Comment`,
+        });
+      } else if (hasNoOpt) {
+        columns.push({
+          key: `${q.entryId}__no_comment`,
+          label: `${q.title} — Comment`,
+        });
+      }
+    }
+
+    const headerRow = columns.map((c) => escapeCsvCell(c.label)).join(',');
+    const dataRows = rawResponses.map((r) => {
+      const answers = JSON.parse(r.answers_json || '{}');
+      return columns
+        .map((col) => {
+          if (col.key === '__submitted_at') return escapeCsvCell(r.submitted_at);
+          if (col.key === '__participant_name') return escapeCsvCell(r.participant_name);
+          if (col.key === '__participant_office') return escapeCsvCell(r.participant_office);
+          if (col.key === '__google_sync_status') return escapeCsvCell(r.google_sync_status);
+          const val = answers[col.key];
+          if (Array.isArray(val)) return escapeCsvCell(val.join('; '));
+          return escapeCsvCell(val ?? '');
+        })
+        .join(',');
+    });
+
+    const csv = [headerRow, ...dataRows].join('\r\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${form.slug}-responses.csv"`
+    );
+    return res.send(csv);
+  } catch (err) {
+    next(err);
   }
-
-  const headerRow = columns.map((c) => escapeCsvCell(c.label)).join(',');
-  const dataRows = rawResponses.map((r) => {
-    const answers = JSON.parse(r.answers_json || '{}');
-    return columns
-      .map((col) => {
-        if (col.key === '__submitted_at') return escapeCsvCell(r.submitted_at);
-        if (col.key === '__participant_name') return escapeCsvCell(r.participant_name);
-        if (col.key === '__participant_office') return escapeCsvCell(r.participant_office);
-        if (col.key === '__google_sync_status') return escapeCsvCell(r.google_sync_status);
-        const val = answers[col.key];
-        if (Array.isArray(val)) return escapeCsvCell(val.join('; '));
-        return escapeCsvCell(val ?? '');
-      })
-      .join(',');
-  });
-
-  const csv = [headerRow, ...dataRows].join('\r\n');
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="${form.slug}-responses.csv"`
-  );
-  return res.send(csv);
 });
 
 export default router;
