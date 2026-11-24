@@ -898,7 +898,7 @@ export default function LiveMonitor() {
           <div className="space-y-6">
             {/* Executive Overview Row (only shown when responses > 0) */}
             {summary.totalResponses > 0 && (
-              <section className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Participation by Office */}
                 <div className="rounded-2xl bg-white border border-slate-200/80 shadow-xs p-5">
                   <div className="flex items-center gap-2 mb-4">
@@ -993,59 +993,6 @@ export default function LiveMonitor() {
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
-                </div>
-
-                {/* Items Needing Attention ("No" Flags) */}
-                <div className="rounded-2xl bg-white border border-slate-200/80 shadow-xs p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-                      <AlertCircle className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        Items Flagged "No"
-                      </h3>
-                      <p className="text-[11px] text-slate-400">
-                        Questions with negative feedback to review
-                      </p>
-                    </div>
-                  </div>
-
-                  {insights.attentionItems.length === 0 ? (
-                    <div className="h-36 rounded-xl bg-emerald-50/70 border border-emerald-100 flex flex-col items-center justify-center text-center p-4">
-                      <CheckCircle2 className="w-7 h-7 text-emerald-500 mb-1.5" />
-                      <p className="text-xs font-bold text-emerald-800">
-                        No negative flags yet
-                      </p>
-                      <p className="text-[11px] text-emerald-600 mt-0.5">
-                        All Yes/No items currently have 0 "No" responses.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {insights.attentionItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-xl bg-rose-50/60 border border-rose-200/70 p-2.5"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug">
-                              {item.title}
-                            </p>
-                            <span className="shrink-0 px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-extrabold">
-                              {item.noCount} No ({item.noPct}%)
-                            </span>
-                          </div>
-                          {item.commentsCount > 0 && (
-                            <p className="text-[10px] font-semibold text-rose-700 mt-1">
-                              {item.commentsCount} explanation{' '}
-                              {item.commentsCount === 1 ? 'comment' : 'comments'} attached
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </section>
             )}

@@ -35,7 +35,11 @@ const THEME_PALETTE = {
  * Pure-SVG animated companion mascot ("Pip") with zero emojis.
  * mood: 'welcome' | 'idle' | 'happy' | 'curious' | 'oops' | 'milestone' | 'complete'
  */
-export default function MascotBuddy({ mood = 'idle', message = '', themeId = 'emerald' }) {
+const MascotBuddy = React.memo(function MascotBuddy({
+  mood = 'idle',
+  message = '',
+  themeId = 'emerald',
+}) {
   const colors = THEME_PALETTE[themeId] || THEME_PALETTE.emerald;
 
   const bodyAnimate =
@@ -233,4 +237,6 @@ export default function MascotBuddy({ mood = 'idle', message = '', themeId = 'em
       </AnimatePresence>
     </div>
   );
-}
+});
+
+export default MascotBuddy;

@@ -155,97 +155,66 @@ function parseWelcomeDescription(raw) {
 
 const slideVariants = {
   enter: (direction) => ({
-    x: direction > 0 ? 70 : -70,
+    x: direction > 0 ? 32 : -32,
     opacity: 0,
-    scale: 0.94,
-    rotate: direction > 0 ? 1.5 : -1.5,
   }),
   center: {
     x: 0,
     opacity: 1,
-    scale: 1,
-    rotate: 0,
   },
   exit: (direction) => ({
-    x: direction > 0 ? -70 : 70,
+    x: direction > 0 ? -32 : 32,
     opacity: 0,
-    scale: 0.94,
-    rotate: direction > 0 ? -1.5 : 1.5,
   }),
 };
 
-/** Pure vector/geometric animated background (zero emojis) */
-function AmbientBackground({ theme }) {
+/** Lightweight, GPU-friendly vector background (memoized, zero heavy mobile blur repaints) */
+const AmbientBackground = React.memo(function AmbientBackground({ theme }) {
   const accentStroke = theme.chartColors?.[0] || '#10b981';
   const secondaryStroke = theme.chartColors?.[1] || '#14b8a6';
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {/* Subtle geometric dot matrix */}
+      {/* Soft static radial pastel washes (zero GPU blur cost on mobile) */}
       <div
-        className="absolute inset-0 opacity-[0.38]"
+        className="absolute inset-0"
         style={{
-          backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.11) 1.2px, transparent 1.2px)',
+          background: `radial-gradient(circle at 12% 10%, ${accentStroke}24 0%, transparent 45%), radial-gradient(circle at 88% 25%, ${secondaryStroke}20 0%, transparent 42%), radial-gradient(circle at 50% 95%, ${accentStroke}1c 0%, transparent 50%)`,
+        }}
+      />
+
+      {/* Subtle dot matrix */}
+      <div
+        className="absolute inset-0 opacity-[0.32]"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.11) 1.1px, transparent 1.1px)',
           backgroundSize: '28px 28px',
         }}
       />
 
-      {/* Soft Drifting Pastel Orbs */}
-      <motion.div
-        animate={{ x: [0, 45, -25, 0], y: [0, -35, 25, 0], scale: [1, 1.12, 0.94, 1] }}
-        transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute -top-24 -left-24 w-80 h-80 sm:w-[480px] sm:h-[480px] rounded-full blur-3xl ${theme.orb1}`}
-      />
-      <motion.div
-        animate={{ x: [0, -45, 25, 0], y: [0, 35, -25, 0], scale: [1, 0.92, 1.08, 1] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute top-1/4 -right-28 w-80 h-80 sm:w-[460px] sm:h-[460px] rounded-full blur-3xl ${theme.orb2}`}
-      />
-      <motion.div
-        animate={{ x: [0, 30, -30, 0], y: [0, -25, 20, 0] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute -bottom-28 left-1/3 w-72 h-72 sm:w-[420px] sm:h-[420px] rounded-full blur-3xl ${theme.orb3}`}
-      />
-
-      {/* Animated Flowing SVG Ribbon Wave (Bottom) */}
+      {/* Clean Static SVG Wave Ribbon (Bottom - zero 60fps path morphing) */}
       <svg
-        viewBox="0 0 1440 320"
+        viewBox="0 0 1440 240"
         preserveAspectRatio="none"
-        className="absolute bottom-0 left-0 right-0 w-full h-44 sm:h-56 opacity-[0.16]"
+        className="absolute bottom-0 left-0 right-0 w-full h-32 sm:h-44 opacity-[0.14]"
       >
-        <motion.path
-          d="M0,192 C240,120 480,260 720,180 C960,100 1200,240 1440,160 L1440,320 L0,320 Z"
+        <path
+          d="M0,140 C260,70 520,200 780,125 C1020,55 1240,175 1440,110 L1440,240 L0,240 Z"
           fill={accentStroke}
-          animate={{
-            d: [
-              'M0,192 C240,120 480,260 720,180 C960,100 1200,240 1440,160 L1440,320 L0,320 Z',
-              'M0,160 C240,240 480,110 720,200 C960,260 1200,120 1440,192 L1440,320 L0,320 Z',
-              'M0,192 C240,120 480,260 720,180 C960,100 1200,240 1440,160 L1440,320 L0,320 Z',
-            ],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
         />
-        <motion.path
-          d="M0,240 C300,180 600,290 900,210 C1150,150 1320,250 1440,220 L1440,320 L0,320 Z"
+        <path
+          d="M0,180 C320,125 620,220 940,155 C1180,105 1330,190 1440,165 L1440,240 L0,240 Z"
           fill={secondaryStroke}
           opacity="0.65"
-          animate={{
-            d: [
-              'M0,240 C300,180 600,290 900,210 C1150,150 1320,250 1440,220 L1440,320 L0,320 Z',
-              'M0,210 C300,280 600,170 900,240 C1150,280 1320,180 1440,235 L1440,320 L0,320 Z',
-              'M0,240 C300,180 600,290 900,210 C1150,150 1320,250 1440,220 L1440,320 L0,320 Z',
-            ],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
       </svg>
 
-      {/* Top-Left Animated Orbital Ring */}
+      {/* Subtle Desktop-Only Orbital Ring */}
       <motion.svg
         viewBox="0 0 160 160"
-        className="hidden md:block absolute top-20 left-[7%] w-32 h-32 opacity-40"
+        className="hidden lg:block absolute top-20 left-[7%] w-28 h-28 opacity-30 will-change-transform"
         animate={{ rotate: 360 }}
-        transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
       >
         <circle
           cx="80"
@@ -256,63 +225,26 @@ function AmbientBackground({ theme }) {
           strokeWidth="1.5"
           strokeDasharray="6 8"
         />
-        <circle cx="80" cy="22" r="5" fill={accentStroke} />
-        <circle cx="138" cy="80" r="3.5" fill={secondaryStroke} opacity="0.7" />
+        <circle cx="80" cy="22" r="4.5" fill={accentStroke} />
       </motion.svg>
 
-      {/* Top-Right Animated Geometric Vector Starburst */}
       <motion.svg
         viewBox="0 0 120 120"
-        className="hidden md:block absolute top-24 right-[8%] w-24 h-24 opacity-35"
-        animate={{ rotate: [0, 90, 180], scale: [1, 1.12, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+        className="hidden lg:block absolute top-24 right-[8%] w-20 h-20 opacity-25 will-change-transform"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 36, repeat: Infinity, ease: 'linear' }}
       >
         <path
-          d="M60 12 L68 52 L108 60 L68 68 L60 108 L52 68 L12 60 L52 52 Z"
+          d="M60 14 L67 53 L106 60 L67 67 L60 106 L53 67 L14 60 L53 53 Z"
           fill="none"
           stroke={accentStroke}
           strokeWidth="2"
           strokeLinejoin="round"
         />
-        <circle cx="60" cy="60" r="7" fill={secondaryStroke} opacity="0.6" />
-      </motion.svg>
-
-      {/* Bottom-Left Floating Glass Rounded Diamond */}
-      <motion.div
-        animate={{ y: [0, -18, 0], rotate: [45, 60, 45] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        className="hidden md:block absolute bottom-28 left-[11%] w-14 h-14 rounded-2xl bg-white/45 backdrop-blur-md border-2 border-white/80 shadow-lg"
-      />
-
-      {/* Bottom-Right Pulsing Concentric Vector Rings */}
-      <motion.svg
-        viewBox="0 0 140 140"
-        className="hidden md:block absolute bottom-24 right-[10%] w-28 h-28 opacity-35"
-        animate={{ scale: [0.95, 1.08, 0.95], rotate: [0, -180, -360] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <circle
-          cx="70"
-          cy="70"
-          r="52"
-          fill="none"
-          stroke={secondaryStroke}
-          strokeWidth="1.5"
-          strokeDasharray="10 10"
-        />
-        <circle
-          cx="70"
-          cy="70"
-          r="30"
-          fill="none"
-          stroke={accentStroke}
-          strokeWidth="2"
-        />
-        <circle cx="70" cy="70" r="8" fill={accentStroke} opacity="0.5" />
       </motion.svg>
     </div>
   );
-}
+});
 
 /** Celebratory confetti burst on completion */
 function ConfettiBurst({ colors }) {
@@ -435,15 +367,17 @@ export default function QuizPlayer() {
       .finally(() => setLoading(false));
   }, [slug, storageKey]);
 
-  // Auto-save answers to LocalStorage
+  // Debounced auto-save answers to LocalStorage (avoids blocking main thread on every keystroke)
   useEffect(() => {
-    if (phase === 'playing' && Object.keys(answers).length > 0) {
+    if (phase !== 'playing' || Object.keys(answers).length === 0) return;
+    const timer = setTimeout(() => {
       try {
         localStorage.setItem(storageKey, JSON.stringify(answers));
       } catch {
         // ignore quota errors
       }
-    }
+    }, 500);
+    return () => clearTimeout(timer);
   }, [answers, phase, storageKey]);
 
   // Build linear step list (with Section Milestone cards when 2+ sections)
@@ -615,7 +549,7 @@ export default function QuizPlayer() {
               setDirection(1);
               setBuddyPulse(null);
               setStepIndex((i) => (i < steps.length - 1 ? i + 1 : i));
-            }, 340);
+            }, 200);
           }
         }
       }
@@ -846,38 +780,26 @@ export default function QuizPlayer() {
 
       {/* Top Floating Capsule Progress HUD */}
       {phase === 'playing' && (
-        <motion.div
-          initial={{ opacity: 0, y: -18 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed top-4 left-0 right-0 z-40 px-4"
-        >
-          <div className="max-w-xl mx-auto rounded-full bg-white/85 backdrop-blur-xl border-2 border-white shadow-lg shadow-slate-900/5 px-4 py-2.5 flex items-center gap-3">
+        <div className="fixed top-3 left-0 right-0 z-40 px-3.5 sm:px-4">
+          <div className="max-w-xl mx-auto rounded-full bg-white/95 border-2 border-white shadow-md shadow-slate-900/5 px-4 py-2 flex items-center gap-3">
             <span className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-600 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full shrink-0">
               <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
               {answeredCount}
             </span>
 
             {/* Pill Progress Track */}
-            <div className="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden p-0.5 border border-slate-200/60">
-              <motion.div
-                className={`h-full rounded-full relative ${theme.progressBar}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.max(progressPct, 6)}%` }}
-                transition={{ type: 'spring', stiffness: 140, damping: 20 }}
-              >
-                <motion.div
-                  animate={{ x: ['-100%', '220%'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                  className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent"
-                />
-              </motion.div>
+            <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden p-0.5 border border-slate-200/60">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ease-out ${theme.progressBar}`}
+                style={{ width: `${Math.max(progressPct, 6)}%` }}
+              />
             </div>
 
             <span className="text-xs font-extrabold text-slate-600 tabular-nums shrink-0 min-w-[38px] text-right">
               {progressPct}%
             </span>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Main Centered Container (extra bottom padding on mobile for sticky action bar) */}
@@ -1078,8 +1000,8 @@ export default function QuizPlayer() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-                className="relative"
+                transition={{ duration: 0.16, ease: 'easeOut' }}
+                className="relative will-change-transform"
               >
                 {/* Stacked Card Deck Illusion */}
                 <div className="absolute inset-x-4 -bottom-3 h-10 rounded-[28px] bg-white/65 border border-white shadow-md -z-10" />
@@ -1093,8 +1015,8 @@ export default function QuizPlayer() {
                       ? { x: [0, -10, 10, -7, 7, -3, 0] }
                       : { x: 0 }
                   }
-                  transition={{ duration: 0.4 }}
-                  className="rounded-[32px] bg-white/95 backdrop-blur-xl p-6 sm:p-9 shadow-2xl shadow-slate-900/10 border-2 border-white relative overflow-hidden"
+                  transition={{ duration: 0.35 }}
+                  className="rounded-[28px] sm:rounded-[32px] bg-white p-5 sm:p-9 shadow-xl shadow-slate-900/8 border-2 border-white relative overflow-hidden"
                 >
                   {/* Top animated gradient ribbon */}
                   <div className={`absolute top-0 left-0 right-0 h-2 ${theme.progressBar}`} />
@@ -1312,21 +1234,11 @@ export default function QuizPlayer() {
                                     : theme.pillActive;
 
                                 return (
-                                  <motion.button
+                                  <button
                                     key={option}
                                     type="button"
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{
-                                      delay: Math.min(idx * 0.045, 0.25),
-                                      type: 'spring',
-                                      stiffness: 380,
-                                      damping: 24,
-                                    }}
-                                    whileHover={{ y: -2, scale: 1.01 }}
-                                    whileTap={{ scale: 0.985, y: 1 }}
                                     onClick={() => setAnswer(q.entryId, option, q)}
-                                    className={`w-full flex items-center gap-3.5 p-4 rounded-2xl border-2 border-b-4 text-left transition-colors ${
+                                    className={`w-full flex items-center gap-3.5 p-4 rounded-2xl border-2 border-b-4 text-left transition-all duration-150 active:scale-[0.985] active:translate-y-0.5 ${
                                       selected
                                         ? selectedStyle
                                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80'
@@ -1344,24 +1256,18 @@ export default function QuizPlayer() {
                                     <span className="flex-1 text-sm sm:text-base font-bold text-slate-800">
                                       {option}
                                     </span>
-                                    <AnimatePresence>
-                                      {selected && (
-                                        <motion.span
-                                          initial={{ scale: 0, rotate: -35 }}
-                                          animate={{ scale: 1, rotate: 0 }}
-                                          exit={{ scale: 0 }}
-                                          transition={{ type: 'spring', stiffness: 460, damping: 18 }}
-                                          className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                                            isSemanticNo
-                                              ? 'bg-rose-500 text-white'
-                                              : 'bg-emerald-500 text-white'
-                                          }`}
-                                        >
-                                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                        </motion.span>
-                                      )}
-                                    </AnimatePresence>
-                                  </motion.button>
+                                    {selected && (
+                                      <span
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                                          isSemanticNo
+                                            ? 'bg-rose-500 text-white'
+                                            : 'bg-emerald-500 text-white'
+                                        }`}
+                                      >
+                                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                      </span>
+                                    )}
+                                  </button>
                                 );
                               })}
                             </div>
@@ -1791,7 +1697,7 @@ export default function QuizPlayer() {
       {/* Mobile Thumb-Friendly Sticky Bottom Action Bar */}
       {phase === 'playing' && currentStep && (
         <div
-          className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/80 px-4 pt-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]"
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-slate-200/80 px-4 pt-3 shadow-[0_-6px_20px_rgba(15,23,42,0.06)]"
           style={{ paddingBottom: 'max(0.85rem, env(safe-area-inset-bottom))' }}
         >
           <div className="max-w-xl mx-auto flex items-center gap-3">
