@@ -41,13 +41,15 @@ export default function AdminLogin() {
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-white">
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
-              I
+          <h1 className="font-display text-4xl font-bold tracking-tight text-white flex items-baseline justify-center">
+            <span className="italic bg-gradient-to-tr from-amber-400 via-yellow-300 to-emerald-300 bg-clip-text text-transparent pr-0.5">
+              i
             </span>
-            form
+            <span className="bg-gradient-to-r from-white via-emerald-100 to-teal-200 bg-clip-text text-transparent tracking-wide">
+              FORM
+            </span>
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-slate-400 mt-1.5">
             Admin Dashboard & Live Answer Monitor
           </p>
         </div>
@@ -55,7 +57,7 @@ export default function AdminLogin() {
         <div className="rounded-2xl bg-white/95 backdrop-blur p-8 shadow-2xl border border-white/20">
           <h2 className="text-lg font-bold text-slate-900 mb-1">Admin Sign In</h2>
           <p className="text-xs text-slate-500 mb-6">
-            Sign in with your Iform credentials to manage forms and monitor responses.
+            Sign in with your iFORM credentials to manage forms and monitor responses.
           </p>
 
           {error && (

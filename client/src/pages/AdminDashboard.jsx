@@ -178,10 +178,10 @@ export default function AdminDashboard() {
       />
 
       {/* Frosted Light Executive Header */}
-      <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center border border-slate-200 shadow-xs">
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_2px_10px_rgba(15,23,42,0.03)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-1.5 flex items-center justify-center border border-emerald-200/80 shadow-md shadow-emerald-600/10">
               <img
                 src="/logo.png"
                 alt="Department of Agriculture Logo"
@@ -189,18 +189,20 @@ export default function AdminDashboard() {
               />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-display text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-                  <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-600 bg-clip-text text-transparent">
-                    I
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-display text-2xl sm:text-3xl font-bold leading-none tracking-tight flex items-baseline">
+                  <span className="italic bg-gradient-to-tr from-amber-500 via-amber-400 to-emerald-500 bg-clip-text text-transparent pr-0.5 drop-shadow-2xs">
+                    i
                   </span>
-                  form
+                  <span className="bg-gradient-to-r from-slate-900 via-emerald-900 to-teal-700 bg-clip-text text-transparent tracking-wide">
+                    FORM
+                  </span>
                 </h1>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-mono font-bold text-emerald-700">
+                <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 text-[10px] font-mono font-bold text-emerald-700 shadow-2xs">
                   v2.0
                 </span>
               </div>
-              <p className="text-[11px] font-medium text-slate-500">
+              <p className="text-[11px] font-semibold text-slate-500 mt-1 tracking-wide">
                 DA-RFO IV-CALABARZON · ICT Management Console
               </p>
             </div>
@@ -252,10 +254,10 @@ export default function AdminDashboard() {
               LIVE TELEMETRY · GOOGLE FORMS SYNC ENGINE
             </div>
             <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-                I
+              <span className="italic bg-gradient-to-tr from-amber-500 to-emerald-500 bg-clip-text text-transparent pr-0.5">
+                i
               </span>
-              form{' '}
+              <span className="text-slate-900 tracking-wide">FORM</span>{' '}
               <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 bg-clip-text text-transparent">
                 Control Center
               </span>
