@@ -34,7 +34,7 @@ export default function ImportFormModal({ open, onClose, onImported }) {
     const suffix = Math.random().toString(36).slice(2, 6);
     setUrl('demo://workshop-pulse');
     setSlug(`workshop-${suffix}`);
-    setTheme('vibrant');
+    setTheme('ocean');
     setError('');
   };
 

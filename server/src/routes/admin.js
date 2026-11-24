@@ -9,7 +9,7 @@ import {
 const router = Router();
 router.use(requireAdmin);
 
-const VALID_THEMES = new Set(['emerald', 'slate', 'vibrant']);
+const VALID_THEMES = new Set(['emerald', 'ocean', 'indigo', 'teal', 'amber', 'slate']);
 
 function slugify(input) {
   return (input || '')
