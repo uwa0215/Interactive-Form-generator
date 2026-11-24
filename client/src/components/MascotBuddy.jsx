@@ -3,36 +3,39 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const THEME_PALETTE = {
   emerald: {
-    body: '#10b981',
-    bodyLight: '#34d399',
-    belly: '#d1fae5',
-    cheek: '#fb7185',
-    spark: '#f59e0b',
-    glow: 'rgba(16, 185, 129, 0.28)',
+    shellLight: '#34d399',
+    shellDark: '#059669',
+    led: '#34d399',
+    ledGlow: '#6ee7b7',
+    beacon: '#fbbf24',
+    ear: '#0d9488',
+    shadow: 'rgba(16, 185, 129, 0.28)',
     bubbleBorder: 'border-emerald-200',
   },
   slate: {
-    body: '#475569',
-    bodyLight: '#64748b',
-    belly: '#e2e8f0',
-    cheek: '#f472b6',
-    spark: '#6366f1',
-    glow: 'rgba(99, 102, 241, 0.25)',
+    shellLight: '#64748b',
+    shellDark: '#1e293b',
+    led: '#38bdf8',
+    ledGlow: '#7dd3fc',
+    beacon: '#818cf8',
+    ear: '#334155',
+    shadow: 'rgba(56, 189, 248, 0.25)',
     bubbleBorder: 'border-slate-200',
   },
   vibrant: {
-    body: '#a855f7',
-    bodyLight: '#e879f9',
-    belly: '#fae8ff',
-    cheek: '#fb7185',
-    spark: '#f59e0b',
-    glow: 'rgba(192, 38, 211, 0.28)',
+    shellLight: '#e879f9',
+    shellDark: '#7c3aed',
+    led: '#f0abfc',
+    ledGlow: '#f5d0fe',
+    beacon: '#fbbf24',
+    ear: '#9333ea',
+    shadow: 'rgba(192, 38, 211, 0.28)',
     bubbleBorder: 'border-fuchsia-200',
   },
 };
 
 /**
- * Pure-SVG animated companion mascot ("Pip") with zero emojis.
+ * Cute ICT / MIS-inspired animated mini-robot companion (pure lightweight SVG).
  * mood: 'welcome' | 'idle' | 'happy' | 'curious' | 'oops' | 'milestone' | 'complete'
  */
 const MascotBuddy = React.memo(function MascotBuddy({
@@ -41,180 +44,202 @@ const MascotBuddy = React.memo(function MascotBuddy({
   themeId = 'emerald',
 }) {
   const colors = THEME_PALETTE[themeId] || THEME_PALETTE.emerald;
+  const eyeColor = mood === 'oops' ? '#fb7185' : mood === 'curious' ? '#fbbf24' : colors.led;
 
-  const bodyAnimate =
+  const botAnimate =
     mood === 'happy' || mood === 'complete'
-      ? { y: [0, -10, 0, -5, 0], rotate: [0, -5, 5, 0] }
+      ? { y: [0, -8, 0, -4, 0], rotate: [0, -4, 4, 0] }
       : mood === 'oops'
-        ? { x: [0, -5, 5, -3, 3, 0], rotate: [0, -6, 6, 0] }
+        ? { x: [0, -5, 5, -3, 3, 0] }
         : mood === 'milestone'
-          ? { y: [0, -8, 0], scale: [1, 1.06, 1] }
-          : { y: [0, -4, 0], rotate: [0, 1.5, -1.5, 0] };
+          ? { y: [0, -6, 0], scale: [1, 1.05, 1] }
+          : { y: [0, -4, 0] };
 
-  const bodyTransition =
+  const botTransition =
     mood === 'happy' || mood === 'oops'
-      ? { duration: 0.55, ease: 'easeInOut' }
-      : { duration: 3.2, repeat: Infinity, ease: 'easeInOut' };
+      ? { duration: 0.45, ease: 'easeInOut' }
+      : { duration: 2.8, repeat: Infinity, ease: 'easeInOut' };
 
   return (
     <div className="flex items-end justify-center gap-3 mb-3 select-none">
-      {/* Pure Vector SVG Buddy */}
+      {/* Pure Vector Cute ICT / MIS Robot */}
       <motion.div
         key={mood}
-        animate={bodyAnimate}
-        transition={bodyTransition}
-        className="relative w-16 h-16 shrink-0"
-        style={{ filter: `drop-shadow(0 8px 14px ${colors.glow})` }}
+        animate={botAnimate}
+        transition={botTransition}
+        className="relative w-16 h-16 shrink-0 will-change-transform"
+        style={{ filter: `drop-shadow(0 8px 14px ${colors.shadow})` }}
       >
-        <svg viewBox="0 0 80 80" className="w-full h-full overflow-visible">
+        <svg viewBox="0 0 84 84" className="w-full h-full overflow-visible">
           <defs>
-            <linearGradient id={`pip-grad-${themeId}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={colors.bodyLight} />
-              <stop offset="100%" stopColor={colors.body} />
+            <linearGradient id={`bot-shell-${themeId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={colors.shellLight} />
+              <stop offset="100%" stopColor={colors.shellDark} />
+            </linearGradient>
+            <linearGradient id={`bot-visor-${themeId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#1e293b" />
+              <stop offset="100%" stopColor="#0f172a" />
             </linearGradient>
           </defs>
 
-          {/* Animated Antenna / Sprout */}
-          <motion.path
-            d="M40 16 C40 9, 46 6, 50 9"
-            fill="none"
-            stroke={colors.body}
-            strokeWidth="3.5"
+          {/* Antenna Stem & Pulsing Signal Beacon */}
+          <line
+            x1="42"
+            y1="18"
+            x2="42"
+            y2="9"
+            stroke={colors.shellDark}
+            strokeWidth="3.2"
             strokeLinecap="round"
-            animate={{ rotate: [-6, 6, -6] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-            style={{ originX: '40px', originY: '16px' }}
           />
-          <circle cx="51" cy="9" r="4" fill="#fbbf24" />
+          <motion.circle
+            cx="42"
+            cy="7"
+            r="4.2"
+            fill={colors.beacon}
+            animate={{ opacity: [1, 0.45, 1], scale: [1, 1.18, 1] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ originX: '42px', originY: '7px' }}
+          />
 
-          {/* Main Squishy Rounded Body */}
+          {/* Side Headset / Comms Ear Pods */}
+          <rect x="6" y="31" width="8" height="18" rx="4" fill={colors.ear} />
+          <rect x="70" y="31" width="8" height="18" rx="4" fill={colors.ear} />
+          <circle cx="10" cy="40" r="2" fill="#ffffff" opacity="0.7" />
+          <circle cx="74" cy="40" r="2" fill="#ffffff" opacity="0.7" />
+
+          {/* Main Rounded Robot Head Shell */}
           <rect
-            x="14"
-            y="16"
-            width="52"
-            height="50"
-            rx="24"
-            fill={`url(#pip-grad-${themeId})`}
+            x="13"
+            y="18"
+            width="58"
+            height="44"
+            rx="18"
+            fill={`url(#bot-shell-${themeId})`}
           />
 
-          {/* Soft Belly Highlight */}
-          <ellipse cx="40" cy="54" rx="16" ry="9" fill={colors.belly} opacity="0.55" />
+          {/* Subtle Top Specular Gloss */}
+          <path
+            d="M25 22 H59"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            opacity="0.35"
+          />
 
-          {/* Rosy Cheeks */}
-          <ellipse cx="24" cy="43" rx="4.5" ry="2.8" fill={colors.cheek} opacity="0.65" />
-          <ellipse cx="56" cy="43" rx="4.5" ry="2.8" fill={colors.cheek} opacity="0.65" />
+          {/* Dark OLED Visor Screen */}
+          <rect
+            x="20"
+            y="26"
+            width="44"
+            height="28"
+            rx="11"
+            fill={`url(#bot-visor-${themeId})`}
+            stroke="#ffffff"
+            strokeOpacity="0.2"
+            strokeWidth="1.2"
+          />
 
-          {/* Eyes */}
+          {/* LED Eyes */}
           {mood === 'happy' || mood === 'complete' || mood === 'milestone' ? (
             <>
               <path
-                d="M26 37 Q30 31 34 37"
+                d="M27 39 Q32 33 37 39"
                 fill="none"
-                stroke="#0f172a"
+                stroke={eyeColor}
                 strokeWidth="3.2"
                 strokeLinecap="round"
               />
               <path
-                d="M46 37 Q50 31 54 37"
+                d="M47 39 Q52 33 57 39"
                 fill="none"
-                stroke="#0f172a"
+                stroke={eyeColor}
                 strokeWidth="3.2"
                 strokeLinecap="round"
               />
             </>
           ) : mood === 'oops' ? (
             <>
-              <circle cx="30" cy="36" r="4.8" fill="#ffffff" />
-              <circle cx="30" cy="36" r="2.3" fill="#0f172a" />
-              <circle cx="50" cy="36" r="4.8" fill="#ffffff" />
-              <circle cx="50" cy="36" r="2.3" fill="#0f172a" />
+              <circle cx="32" cy="38" r="4.2" fill="none" stroke={eyeColor} strokeWidth="2.6" />
+              <circle cx="32" cy="38" r="1.4" fill={eyeColor} />
+              <circle cx="52" cy="38" r="4.2" fill="none" stroke={eyeColor} strokeWidth="2.6" />
+              <circle cx="52" cy="38" r="1.4" fill={eyeColor} />
+            </>
+          ) : mood === 'curious' ? (
+            <>
+              <rect x="28" y="35" width="7.5" height="6" rx="3" fill={eyeColor} />
+              <circle cx="52" cy="38" r="4.3" fill={eyeColor} />
+              <circle cx="50.5" cy="36.5" r="1.3" fill="#ffffff" />
             </>
           ) : (
             <motion.g
-              animate={{ scaleY: [1, 1, 0.12, 1, 1] }}
-              transition={{ duration: 4.2, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1] }}
-              style={{ originY: '36px' }}
+              animate={{ scaleY: [1, 1, 0.14, 1, 1] }}
+              transition={{ duration: 4, repeat: Infinity, times: [0, 0.46, 0.5, 0.54, 1] }}
+              style={{ originY: '38px' }}
             >
-              <circle cx="30" cy="36" r="4.2" fill="#0f172a" />
-              <circle cx="28.6" cy="34.5" r="1.4" fill="#ffffff" />
-              <circle cx="50" cy="36" r="4.2" fill="#0f172a" />
-              <circle cx="48.6" cy="34.5" r="1.4" fill="#ffffff" />
+              <rect x="28" y="34" width="8" height="8" rx="4" fill={eyeColor} />
+              <circle cx="30.5" cy="36.2" r="1.3" fill="#ffffff" />
+              <rect x="48" y="34" width="8" height="8" rx="4" fill={eyeColor} />
+              <circle cx="50.5" cy="36.2" r="1.3" fill="#ffffff" />
             </motion.g>
           )}
 
-          {/* Mouth */}
+          {/* LED Digital Mouth */}
           {mood === 'happy' || mood === 'complete' || mood === 'milestone' ? (
             <path
-              d="M34 44 Q40 51 46 44"
+              d="M36 45 Q42 50 48 45"
               fill="none"
-              stroke="#0f172a"
-              strokeWidth="3"
+              stroke={eyeColor}
+              strokeWidth="2.6"
               strokeLinecap="round"
             />
           ) : mood === 'oops' ? (
-            <circle cx="40" cy="46" r="3.2" fill="#0f172a" />
+            <rect x="38" y="45" width="8" height="3" rx="1.5" fill={eyeColor} />
           ) : mood === 'curious' ? (
             <path
-              d="M36 45 Q40 43 44 45"
+              d="M38 46.5 Q42 44.5 46 46.5"
               fill="none"
-              stroke="#0f172a"
-              strokeWidth="2.8"
+              stroke={eyeColor}
+              strokeWidth="2.4"
               strokeLinecap="round"
             />
           ) : (
             <path
-              d="M35 44 Q40 48 45 44"
+              d="M37 45.5 Q42 48.8 47 45.5"
               fill="none"
-              stroke="#0f172a"
-              strokeWidth="2.8"
+              stroke={eyeColor}
+              strokeWidth="2.4"
               strokeLinecap="round"
             />
           )}
 
-          {/* Animated Side Hands */}
-          <motion.circle
-            cx="11"
-            cy="44"
-            r="5"
-            fill={colors.bodyLight}
-            animate={
-              mood === 'welcome' || mood === 'complete'
-                ? { y: [0, -7, 0, -5, 0] }
-                : { y: [0, -2, 0] }
-            }
-            transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+          {/* Mini Hover-Bot Neck & Chest Base */}
+          <rect x="36" y="62" width="12" height="4" rx="2" fill={colors.shellDark} />
+          <path
+            d="M27 66 H57 C57 73, 50 76, 42 76 C34 76, 27 73, 27 66 Z"
+            fill={`url(#bot-shell-${themeId})`}
           />
-          <motion.circle
-            cx="69"
-            cy="44"
-            r="5"
-            fill={colors.body}
-            animate={
-              mood === 'complete'
-                ? { y: [0, -7, 0, -5, 0] }
-                : { y: [0, 2, 0] }
-            }
-            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          {/* Glowing MIS Core Dot */}
+          <circle cx="42" cy="70.5" r="2.6" fill={colors.ledGlow} />
         </svg>
 
-        {/* Animated SVG 4-Point Vector Star Spark (replaces emoji) */}
+        {/* Animated Tech Spark on positive moods */}
         {(mood === 'happy' || mood === 'complete' || mood === 'milestone') && (
           <motion.svg
             viewBox="0 0 24 24"
-            className="w-5 h-5 absolute -top-2 -right-2 pointer-events-none"
+            className="w-4 h-4 absolute -top-1 -right-1 pointer-events-none"
             initial={{ opacity: 0, scale: 0, rotate: -45 }}
             animate={{
               opacity: [0, 1, 0],
-              scale: [0.4, 1.2, 0.6],
+              scale: [0.5, 1.15, 0.7],
               rotate: [0, 90, 180],
-              y: [4, -10],
+              y: [2, -8],
             }}
-            transition={{ duration: 1.1, repeat: mood === 'complete' ? Infinity : 0 }}
+            transition={{ duration: 1, repeat: mood === 'complete' ? Infinity : 0 }}
           >
             <path
               d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"
-              fill={colors.spark}
+              fill={colors.beacon}
             />
           </motion.svg>
         )}
@@ -225,11 +250,11 @@ const MascotBuddy = React.memo(function MascotBuddy({
         {message && (
           <motion.div
             key={message}
-            initial={{ opacity: 0, scale: 0.85, x: -8 }}
+            initial={{ opacity: 0, scale: 0.9, x: -6 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.88, x: 6 }}
-            transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-            className={`relative px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white/95 backdrop-blur-md border-2 ${colors.bubbleBorder} shadow-md text-xs sm:text-sm font-bold text-slate-700 max-w-[260px] sm:max-w-xs leading-snug mb-2`}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className={`relative px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white border-2 ${colors.bubbleBorder} shadow-md text-xs sm:text-sm font-bold text-slate-700 max-w-[260px] sm:max-w-xs leading-snug mb-2`}
           >
             {message}
           </motion.div>
