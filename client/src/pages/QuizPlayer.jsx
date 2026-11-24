@@ -22,6 +22,7 @@ import {
   Star,
   Target,
   ClipboardList,
+  ShieldCheck,
 } from 'lucide-react';
 import { api } from '../api';
 import { getTheme } from '../utils/themes';
@@ -1132,11 +1133,26 @@ export default function QuizPlayer() {
                               {q.required && <span className="text-rose-500 ml-1">*</span>}
                             </h2>
                             {q.description && (
-                              <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+                              <p className="mt-1.5 text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                                 {q.description}
                               </p>
                             )}
                           </motion.div>
+
+                          {/* Attached Notice / Data Privacy Notice Block */}
+                          {q.notice && (q.notice.title || q.notice.text) && (
+                            <div className="rounded-2xl bg-emerald-50/75 border border-emerald-200/90 p-4 space-y-2">
+                              <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-800">
+                                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>{q.notice.title || 'Notice'}</span>
+                              </div>
+                              {q.notice.text && (
+                                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line max-h-56 overflow-y-auto pr-1">
+                                  {q.notice.text}
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {/* Input Controls by Question Type */}
                           {q.type === 'short_text' && (

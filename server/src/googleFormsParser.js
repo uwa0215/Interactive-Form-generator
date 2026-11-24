@@ -115,6 +115,7 @@ export function parseGoogleFormData(data) {
 
   let currentSection = sections[0];
   let pageCount = 1;
+  let pendingNotice = null;
 
   for (const item of rawItems) {
     if (!Array.isArray(item)) continue;
@@ -128,6 +129,7 @@ export function parseGoogleFormData(data) {
     // Type 8: Section header / Page break
     if (itemType === 8) {
       pageCount++;
+      pendingNotice = null;
       currentSection = {
         id: `section-${pageCount - 1}`,
         index: pageCount - 1,
@@ -139,7 +141,25 @@ export function parseGoogleFormData(data) {
       continue;
     }
 
-    // Ignore purely decorative items (title/description blocks = 6, image = 11, video = 12)
+    // Type 6: Title & Description block (e.g., Data Privacy Notice) -> attach to the next question
+    if (itemType === 6 && (itemTitle || itemDesc)) {
+      if (pendingNotice) {
+        pendingNotice = {
+          title: pendingNotice.title || itemTitle,
+          text: [pendingNotice.text, itemTitle && pendingNotice.title ? itemTitle : '', itemDesc]
+            .filter(Boolean)
+            .join('\n\n'),
+        };
+      } else {
+        pendingNotice = {
+          title: itemTitle,
+          text: itemDesc,
+        };
+      }
+      continue;
+    }
+
+    // Ignore purely decorative media items (image = 11, video = 12)
     if (!fieldGroup.length || !Array.isArray(fieldGroup[0])) continue;
 
     const primaryField = fieldGroup[0];
@@ -253,6 +273,12 @@ export function parseGoogleFormData(data) {
         description: itemDesc,
         required,
       };
+    }
+
+    // Attach any preceding Title & Description notice block (e.g. Data Privacy Notice)
+    if (pendingNotice) {
+      question.notice = pendingNotice;
+      pendingNotice = null;
     }
 
     // Auto-attach optional comment/explanation text fields to their preceding choice/scale question
