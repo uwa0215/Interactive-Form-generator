@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -330,6 +330,24 @@ export default function QuizPlayer() {
   const [submitResult, setSubmitResult] = useState(null);
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [buddyPulse, setBuddyPulse] = useState(null);
+  const autoAdvanceTimerRef = useRef(null);
+  const touchStartRef = useRef(null);
+
+  const vibrate = (pattern) => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    } catch {
+      // ignore unsupported devices
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    };
+  }, []);
 
   // Load form schema
   useEffect(() => {
@@ -524,10 +542,25 @@ export default function QuizPlayer() {
       }
 
       if (['multiple_choice', 'dropdown', 'linear_scale'].includes(questionObj.type)) {
-        if (hasNoOption(questionObj) && isNoAnswer(value)) {
+        vibrate(12);
+        const needsComment = hasNoOption(questionObj) && isNoAnswer(value);
+        if (needsComment) {
+          if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
           triggerBuddyPulse('curious', 'Tell us a bit more so we can improve.');
         } else {
-          triggerBuddyPulse('happy', 'Got it! Press Next or Enter to continue.');
+          triggerBuddyPulse('happy', 'Nice! Moving right along…');
+          // Smooth auto-advance on single-choice selection when not on final step and no required comment
+          if (
+            !isNegativeAnswer(questionObj, value) &&
+            stepIndex < steps.length - 1
+          ) {
+            if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+            autoAdvanceTimerRef.current = setTimeout(() => {
+              setDirection(1);
+              setBuddyPulse(null);
+              setStepIndex((i) => (i < steps.length - 1 ? i + 1 : i));
+            }, 340);
+          }
         }
       }
     }
@@ -570,8 +603,10 @@ export default function QuizPlayer() {
   };
 
   const handleNext = async () => {
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     const errMsg = getValidationError();
     if (errMsg) {
+      vibrate([20, 35, 20]);
       setValidationError(errMsg);
       setShakeCount((c) => c + 1);
       return;
@@ -580,6 +615,7 @@ export default function QuizPlayer() {
     setBuddyPulse(null);
 
     if (stepIndex < steps.length - 1) {
+      vibrate(10);
       setDirection(1);
       setStepIndex((i) => i + 1);
       return;
@@ -589,6 +625,7 @@ export default function QuizPlayer() {
     setSubmitting(true);
     try {
       const res = await api.submitPublicForm(slug, answers);
+      vibrate([15, 40, 25]);
       setSubmitResult(res);
       setPhase('complete');
       try {
@@ -597,6 +634,7 @@ export default function QuizPlayer() {
         // ignore
       }
     } catch (err) {
+      vibrate([20, 35, 20]);
       setValidationError(err.message || 'Submission failed. Please try again.');
       setShakeCount((c) => c + 1);
     } finally {
@@ -605,6 +643,8 @@ export default function QuizPlayer() {
   };
 
   const handleBack = () => {
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    vibrate(8);
     setValidationError('');
     setBuddyPulse(null);
     if (stepIndex > 0) {
@@ -612,6 +652,31 @@ export default function QuizPlayer() {
       setStepIndex((i) => i - 1);
     } else {
       setPhase('welcome');
+    }
+  };
+
+  // Touch swipe navigation on mobile (swipe left = Next, swipe right = Back)
+  const handleTouchStart = (e) => {
+    if (phase !== 'playing') return;
+    const t = e.touches?.[0];
+    if (!t) return;
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (phase !== 'playing' || !touchStartRef.current) return;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+
+    // Ignore vertical scrolls
+    if (Math.abs(dy) > 45 || Math.abs(dx) < 75) return;
+    if (dx < -75) {
+      handleNext();
+    } else if (dx > 75) {
+      handleBack();
     }
   };
 
@@ -716,7 +781,11 @@ export default function QuizPlayer() {
   }
 
   return (
-    <div className={`min-h-screen relative flex flex-col overflow-x-hidden ${theme.pageBg}`}>
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className={`min-h-[100dvh] relative flex flex-col overflow-x-hidden touch-manipulation ${theme.pageBg}`}
+    >
       <AmbientBackground theme={theme} />
 
       {/* Top Floating Capsule Progress HUD */}
@@ -755,8 +824,12 @@ export default function QuizPlayer() {
         </motion.div>
       )}
 
-      {/* Main Centered Container */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-12 sm:p-8 sm:pt-24">
+      {/* Main Centered Container (extra bottom padding on mobile for sticky action bar) */}
+      <main
+        className={`relative z-10 flex-1 flex flex-col items-center justify-center px-3.5 sm:px-8 pt-16 sm:pt-24 ${
+          phase === 'playing' ? 'pb-28 sm:pb-12' : 'pb-10 sm:pb-12'
+        }`}
+      >
         <div className="w-full max-w-xl">
           {/* Pure-SVG Animated Companion Mascot */}
           <MascotBuddy
@@ -1363,7 +1436,7 @@ export default function QuizPlayer() {
                                             ? 'Please explain why you answered "No"…'
                                             : commentField.placeholder
                                         }
-                                        className={`mt-2.5 w-full px-3.5 py-2.5 rounded-2xl border-2 text-sm text-slate-800 focus:outline-none focus:bg-white resize-none transition ${
+                                        className={`mt-2.5 w-full px-3.5 py-2.5 rounded-2xl border-2 text-base sm:text-sm text-slate-800 focus:outline-none focus:bg-white resize-none transition ${
                                           isCommentRequired && !commentVal.trim()
                                             ? 'border-rose-300 bg-rose-50/50 focus:border-rose-500'
                                             : 'border-slate-200 bg-slate-50/70 focus:border-slate-400'
@@ -1390,8 +1463,8 @@ export default function QuizPlayer() {
                             )}
                           </AnimatePresence>
 
-                          {/* Footer Navigation with Tactile 3D Buttons */}
-                          <div className="pt-4 flex items-center justify-between gap-3 border-t border-slate-100">
+                          {/* Desktop Inline Footer Navigation (hidden on mobile where sticky bar is used) */}
+                          <div className="hidden sm:flex pt-4 items-center justify-between gap-3 border-t border-slate-100">
                             <motion.button
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.96, y: 1 }}
@@ -1429,6 +1502,10 @@ export default function QuizPlayer() {
                               )}
                             </motion.button>
                           </div>
+
+                          <p className="sm:hidden text-[11px] text-center text-slate-400 font-medium pt-1">
+                            Swipe left or right to move between questions
+                          </p>
 
                           <p className="hidden sm:block text-[11px] text-center text-slate-400 font-medium">
                             Tip: Press{' '}
@@ -1576,6 +1653,56 @@ export default function QuizPlayer() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Mobile Thumb-Friendly Sticky Bottom Action Bar */}
+      {phase === 'playing' && currentStep && (
+        <div
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/80 px-4 pt-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]"
+          style={{ paddingBottom: 'max(0.85rem, env(safe-area-inset-bottom))' }}
+        >
+          <div className="max-w-xl mx-auto flex items-center gap-3">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              onClick={handleBack}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-2xl border-2 border-slate-200 border-b-4 bg-white text-slate-700 text-sm font-bold shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.97, y: 1 }}
+              type="button"
+              disabled={submitting}
+              onClick={handleNext}
+              className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-2xl text-white font-extrabold text-sm shadow-lg border-b-4 border-black/20 active:border-b-0 disabled:opacity-60 ${theme.accentBg}`}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Submitting…
+                </>
+              ) : stepIndex === steps.length - 1 ? (
+                <>
+                  Submit Answers
+                  <Check className="w-4 h-4 stroke-[3]" />
+                </>
+              ) : currentStep.kind === 'milestone' ? (
+                <>
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  Next
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </motion.button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
