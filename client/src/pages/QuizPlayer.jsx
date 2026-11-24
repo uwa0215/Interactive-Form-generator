@@ -28,6 +28,11 @@ import { api } from '../api';
 import { getTheme } from '../utils/themes';
 import MascotBuddy from '../components/MascotBuddy';
 
+const DEFAULT_DATA_PRIVACY_NOTICE = {
+  title: 'DATA PRIVACY NOTICE',
+  text: 'Under Republic Act No. 10173 (Data Privacy Act of 2012), personal information collected will be used to document participation, consolidate evaluation results, validate requirements and coordinate improvements. Access to identifiable responses is restricted to authorized personnel. Management reporting will generally use aggregated results. Records will be handled and retained under applicable agency policies.',
+};
+
 const NEGATIVE_CHOICE_PATTERN =
   /\b(difficult|could not|poor|bad|dissatisfied|unhappy|never|rarely|probably not|definitely not|no|slow|frustrat|terrible|worst|disagree)\b/i;
 
@@ -406,6 +411,7 @@ export default function QuizPlayer() {
           id: q.id,
           questionNumber: qCounter,
           sectionTitle: sec.title,
+          sectionDescription: sec.description || '',
           question: q,
         });
       });
@@ -1140,19 +1146,38 @@ export default function QuizPlayer() {
                           </motion.div>
 
                           {/* Attached Notice / Data Privacy Notice Block */}
-                          {q.notice && (q.notice.title || q.notice.text) && (
-                            <div className="rounded-2xl bg-emerald-50/75 border border-emerald-200/90 p-4 space-y-2">
-                              <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-800">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                                <span>{q.notice.title || 'Notice'}</span>
-                              </div>
-                              {q.notice.text && (
-                                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line max-h-56 overflow-y-auto pr-1">
-                                  {q.notice.text}
+                          {(() => {
+                            const isPrivacyQ = /\bdata\s*privacy\b/i.test(q.title || '');
+                            const effectiveNotice =
+                              q.notice && (q.notice.title || q.notice.text)
+                                ? q.notice
+                                : isPrivacyQ
+                                  ? currentStep.sectionDescription &&
+                                    /\b(privacy|10173|personal information)\b/i.test(
+                                      currentStep.sectionDescription
+                                    )
+                                    ? {
+                                        title: 'DATA PRIVACY NOTICE',
+                                        text: currentStep.sectionDescription,
+                                      }
+                                    : DEFAULT_DATA_PRIVACY_NOTICE
+                                  : null;
+
+                            if (!effectiveNotice) return null;
+                            return (
+                              <div className="rounded-2xl bg-emerald-50/75 border border-emerald-200/90 p-4 space-y-2">
+                                <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-800">
+                                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                                  <span>{effectiveNotice.title || 'Notice'}</span>
                                 </div>
-                              )}
-                            </div>
-                          )}
+                                {effectiveNotice.text && (
+                                  <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line max-h-56 overflow-y-auto pr-1">
+                                    {effectiveNotice.text}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* Input Controls by Question Type */}
                           {q.type === 'short_text' && (

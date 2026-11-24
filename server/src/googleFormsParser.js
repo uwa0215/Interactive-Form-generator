@@ -279,6 +279,15 @@ export function parseGoogleFormData(data) {
     if (pendingNotice) {
       question.notice = pendingNotice;
       pendingNotice = null;
+    } else if (
+      /\bdata\s*privacy\b/i.test(question.title) &&
+      currentSection.description &&
+      /\b(privacy|10173|personal information)\b/i.test(currentSection.description)
+    ) {
+      question.notice = {
+        title: 'DATA PRIVACY NOTICE',
+        text: currentSection.description,
+      };
     }
 
     // Auto-attach optional comment/explanation text fields to their preceding choice/scale question
