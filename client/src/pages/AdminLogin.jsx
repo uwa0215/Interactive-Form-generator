@@ -34,8 +34,12 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-400 mb-4 shadow-lg">
-            <Sparkles className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-4 shadow-xl border border-white/30">
+            <img
+              src="/logo.png"
+              alt="Department of Agriculture Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
             Interactive Form Studio

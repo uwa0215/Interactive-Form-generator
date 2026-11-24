@@ -793,10 +793,19 @@ export default function QuizPlayer() {
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-white/20 backdrop-blur-md border border-white/30 mb-3.5"
+                      className="flex items-center gap-3 mb-4"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Interactive Form
+                      <div className="w-12 h-12 rounded-2xl bg-white p-1.5 shadow-md shrink-0 flex items-center justify-center">
+                        <img
+                          src="/logo.png"
+                          alt="Department of Agriculture Logo"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-white/20 backdrop-blur-md border border-white/30">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Interactive Form
+                      </span>
                     </motion.div>
 
                     <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
