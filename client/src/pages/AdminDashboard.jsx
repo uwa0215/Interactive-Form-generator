@@ -280,17 +280,17 @@ export default function AdminDashboard() {
             className="rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300/80 p-5 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                01 · Total Forms
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Total Forms
               </span>
               <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
                 <FileText className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900 mt-2.5 tabular-nums">
+            <p className="text-3xl font-extrabold text-slate-900 mt-3 tracking-tight tabular-nums">
               {summary.total_forms}
             </p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs font-medium text-slate-500 mt-1">
               <span className="text-emerald-600 font-bold">{summary.active_forms}</span>{' '}
               online · {summary.total_forms - summary.active_forms} closed
             </p>
@@ -303,19 +303,15 @@ export default function AdminDashboard() {
             className="rounded-2xl bg-white border border-slate-200/80 hover:border-sky-300/80 p-5 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                02 · Responses Today
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Responses Today
               </span>
               <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-100 text-sky-600 flex items-center justify-center">
                 <Activity className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900 mt-2.5 tabular-nums">
+            <p className="text-3xl font-extrabold text-slate-900 mt-3 tracking-tight tabular-nums">
               {summary.responses_today}
-            </p>
-            <p className="text-xs text-sky-600 font-semibold mt-1 inline-flex items-center gap-1.5">
-              <Wifi className="w-3 h-3" />
-              Real-time sync active
             </p>
           </motion.div>
 
@@ -326,19 +322,15 @@ export default function AdminDashboard() {
             className="rounded-2xl bg-white border border-slate-200/80 hover:border-violet-300/80 p-5 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                03 · All Submissions
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                All Submissions
               </span>
               <div className="w-9 h-9 rounded-xl bg-violet-50 border border-violet-100 text-violet-600 flex items-center justify-center">
                 <BarChart3 className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900 mt-2.5 tabular-nums">
+            <p className="text-3xl font-extrabold text-slate-900 mt-3 tracking-tight tabular-nums">
               {summary.total_responses}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Avg <span className="font-semibold text-slate-700">{avgResponsesPerForm}</span>{' '}
-              per form
             </p>
           </motion.div>
 
@@ -349,14 +341,14 @@ export default function AdminDashboard() {
             className="rounded-2xl bg-white border border-slate-200/80 hover:border-amber-300/80 p-5 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                04 · Availability
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Availability
               </span>
               <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900 mt-2.5 tabular-nums">
+            <p className="text-3xl font-extrabold text-slate-900 mt-3 tracking-tight tabular-nums">
               {activeRate}%
             </p>
             <div className="mt-2.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
