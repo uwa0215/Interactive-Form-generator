@@ -23,9 +23,12 @@ import {
   Target,
   ClipboardList,
   ShieldCheck,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { api } from '../api';
 import { getTheme } from '../utils/themes';
+import { sounds, isSoundEnabled, setSoundEnabled } from '../utils/sounds';
 import MascotBuddy from '../components/MascotBuddy';
 
 const DEFAULT_DATA_PRIVACY_NOTICE = {
@@ -324,8 +327,16 @@ export default function QuizPlayer() {
   const [submitResult, setSubmitResult] = useState(null);
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [buddyPulse, setBuddyPulse] = useState(null);
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
   const autoAdvanceTimerRef = useRef(null);
   const touchStartRef = useRef(null);
+
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) sounds.pop();
+  };
 
   const vibrate = (pattern) => {
     try {
@@ -542,9 +553,11 @@ export default function QuizPlayer() {
         vibrate(12);
         const needsComment = hasNoOption(questionObj) && isNoAnswer(value);
         if (needsComment) {
+          sounds.curious();
           if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
           triggerBuddyPulse('curious', 'Tell us a bit more so we can improve.');
         } else {
+          sounds.pop();
           triggerBuddyPulse('happy', 'Nice! Moving right along…');
           // Smooth auto-advance on single-choice selection when not on final step and no required comment
           if (
@@ -553,6 +566,8 @@ export default function QuizPlayer() {
           ) {
             if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
             autoAdvanceTimerRef.current = setTimeout(() => {
+              const nextStep = steps[stepIndex + 1];
+              if (nextStep?.kind === 'milestone') sounds.milestone();
               setDirection(1);
               setBuddyPulse(null);
               setStepIndex((i) => (i < steps.length - 1 ? i + 1 : i));
@@ -564,6 +579,7 @@ export default function QuizPlayer() {
   };
 
   const toggleCheckbox = (question, option) => {
+    sounds.pop();
     const prev = Array.isArray(answers[question.entryId]) ? answers[question.entryId] : [];
     const next = prev.includes(option)
       ? prev.filter((item) => item !== option)
@@ -604,6 +620,7 @@ export default function QuizPlayer() {
     const errMsg = getValidationError();
     if (errMsg) {
       vibrate([20, 35, 20]);
+      sounds.error();
       setValidationError(errMsg);
       setShakeCount((c) => c + 1);
       return;
@@ -613,6 +630,12 @@ export default function QuizPlayer() {
 
     if (stepIndex < steps.length - 1) {
       vibrate(10);
+      const nextStep = steps[stepIndex + 1];
+      if (nextStep?.kind === 'milestone') {
+        sounds.milestone();
+      } else {
+        sounds.step(true);
+      }
       setDirection(1);
       setStepIndex((i) => i + 1);
       return;
@@ -623,6 +646,7 @@ export default function QuizPlayer() {
     try {
       const res = await api.submitPublicForm(slug, answers);
       vibrate([15, 40, 25]);
+      sounds.complete();
       setSubmitResult(res);
       setPhase('complete');
       try {
@@ -632,6 +656,7 @@ export default function QuizPlayer() {
       }
     } catch (err) {
       vibrate([20, 35, 20]);
+      sounds.error();
       setValidationError(err.message || 'Submission failed. Please try again.');
       setShakeCount((c) => c + 1);
     } finally {
@@ -642,6 +667,7 @@ export default function QuizPlayer() {
   const handleBack = () => {
     if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     vibrate(8);
+    sounds.step(false);
     setValidationError('');
     setBuddyPulse(null);
     if (stepIndex > 0) {
@@ -805,6 +831,16 @@ export default function QuizPlayer() {
             <span className="text-xs font-extrabold text-slate-600 tabular-nums shrink-0 min-w-[38px] text-right">
               {progressPct}%
             </span>
+
+            <button
+              type="button"
+              onClick={toggleSound}
+              title={soundOn ? 'Mute sounds' : 'Unmute sounds'}
+              aria-label={soundOn ? 'Mute sounds' : 'Unmute sounds'}
+              className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition shrink-0"
+            >
+              {soundOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+            </button>
           </div>
         </div>
       )}
@@ -972,6 +1008,7 @@ export default function QuizPlayer() {
                         whileHover={{ scale: 1.02, y: -2 }}
                         whileTap={{ scale: 0.98, y: 2 }}
                         onClick={() => {
+                          sounds.start();
                           setDirection(1);
                           setPhase('playing');
                         }}
