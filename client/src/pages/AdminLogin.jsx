@@ -42,7 +42,7 @@ export default function AdminLogin() {
             />
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            Interactive Form Studio
+            Iform
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Admin Dashboard & Live Answer Monitor
@@ -52,7 +52,7 @@ export default function AdminLogin() {
         <div className="rounded-2xl bg-white/95 backdrop-blur p-8 shadow-2xl border border-white/20">
           <h2 className="text-lg font-bold text-slate-900 mb-1">Admin Sign In</h2>
           <p className="text-xs text-slate-500 mb-6">
-            Sign in with your studio credentials to manage forms and monitor responses.
+            Sign in with your Iform credentials to manage forms and monitor responses.
           </p>
 
           {error && (

@@ -191,7 +191,7 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900">
-                  MIS Form Studio
+                  Iform
                 </h1>
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-mono font-bold text-emerald-700">
                   v2.0
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
               LIVE TELEMETRY · GOOGLE FORMS SYNC ENGINE
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Interactive Form{' '}
+              Iform{' '}
               <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 Control Center
               </span>
