@@ -190,8 +190,11 @@ export default function AdminDashboard() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900">
-                  Iform
+                <h1 className="font-display text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+                  <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-600 bg-clip-text text-transparent">
+                    I
+                  </span>
+                  form
                 </h1>
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-mono font-bold text-emerald-700">
                   v2.0
@@ -248,9 +251,12 @@ export default function AdminDashboard() {
               <Cpu className="w-3.5 h-3.5 text-emerald-600" />
               LIVE TELEMETRY · GOOGLE FORMS SYNC ENGINE
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Iform{' '}
-              <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                I
+              </span>
+              form{' '}
+              <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 bg-clip-text text-transparent">
                 Control Center
               </span>
             </h2>

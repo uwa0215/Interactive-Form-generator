@@ -41,8 +41,11 @@ export default function AdminLogin() {
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            Iform
+          <h1 className="font-display text-3xl font-bold tracking-tight text-white">
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
+              I
+            </span>
+            form
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Admin Dashboard & Live Answer Monitor
